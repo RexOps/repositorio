@@ -1,4 +1,4 @@
-# repo-mirror - A tool to mirror linux repositories.
+## repo-mirror - A tool to mirror linux repositories.
 
 repo-mirror is a tool to mirror linux repositories and to tag them.
 
@@ -7,7 +7,7 @@ repo-mirror is a tool to mirror linux repositories and to tag them.
 Currently repo-mirror is in early development stage. Right now only *yum* repositories are supported.
 
 
-## Configuration
+### Configuration
 
 To configure repo-mirror create a configuration file */etc/rex/repo-mirror.conf*.
 
@@ -37,7 +37,7 @@ log4perl.appender.FileAppndr1.filename = /var/log/repo-mirror.log
 log4perl.appender.FileAppndr1.layout   = Log::Log4perl::Layout::SimpleLayout
 ```
 
-## Mirror a repository
+### Mirror a repository
 
 To mirror a defined repository you can use the following command:
 
@@ -64,7 +64,7 @@ repo-mirror --mirror --repo=rex-centos-6-x86-64 --update-files
 ```
 
 
-## Tagging
+### Tagging
 
 Every repository is per default stored in the *head* tag. If you want to create stable tags for your production servers,
 you can do this with the *--tag* option.
