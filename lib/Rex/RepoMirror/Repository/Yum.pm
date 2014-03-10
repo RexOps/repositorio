@@ -21,7 +21,15 @@ sub mirror {
   $self->repo->{url} =~ s/\/$//;
   $self->repo->{local} =~ s/\/$//;
 
-  my $url = $self->repo->{url} . "/repodata/primary.xml.gz";
+  my $repomd_ref =
+    $self->app->decode_xml(
+    $self->app->download( $self->repo->{url} . "/repodata/repomd.xml" ) );
+
+  my ($primary_file) =
+    map { $_ = $_->{location}->[0]->{href} }
+    grep { $_->{type} eq "primary" } @{ $repomd_ref->{data} };
+
+  my $url = $self->repo->{url} . "/" . $primary_file;
   $self->app->logger->debug("Downloading $url.");
   my $ref = $self->app->decode_xml( $self->app->download_gzip($url) );
   for my $package ( @{ $ref->{package} } ) {
@@ -57,10 +65,6 @@ sub mirror {
   catch {
     $self->app->logger->error($_);
   };
-
-  my $repomd_ref =
-    $self->app->decode_xml(
-    $self->app->download( $self->repo->{url} . "/repodata/repomd.xml" ) );
 
   for my $file_data ( @{ $repomd_ref->{data} } ) {
     my $file_url =
