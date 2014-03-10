@@ -1,0 +1,40 @@
+#!/usr/bin/env perl
+
+use Rex::RepoMirror;
+
+use common::sense;
+use Carp;
+use Config::General;
+use Log::Log4perl;
+use Data::Dumper;
+use Getopt::Long;
+
+my @config_file_locations = (
+  "/etc/rex/repo-mirror.conf", "/usr/local/etc/rex/repo-mirror.conf",
+  "./repo-mirror.conf"
+);
+
+my ($config_file) = grep { -f $_ } @config_file_locations;
+
+if ( !$config_file ) {
+  confess "No configuration file found.\nLocations: "
+    . join( ", ", @config_file_locations );
+}
+
+my $conf_o = Config::General->new($config_file);
+my %conf   = $conf_o->getall;
+
+Log::Log4perl::init( $conf{Log4perl}{config} );
+my $logger = Log::Log4perl->get_logger();
+
+$logger->info("repo-mirror started.");
+$logger->debug("Logger initialized.");
+$logger->debug("Configuration Dump:");
+$logger->debug( Dumper( \%conf ) );
+
+my %cli;
+GetOptions( \%cli, "mirror", "tag=s", "repo=s", "help", "update-metadata",
+  "update-files" );
+
+my $app = Rex::RepoMirror->new( config => \%conf, logger => $logger );
+$app->run(%cli);
