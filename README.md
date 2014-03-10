@@ -2,7 +2,7 @@
 
 repo-mirror is a tool to mirror linux repositories and to tag them.
 
-## Supported Repositories
+### Supported Repositories
 
 Currently repo-mirror is in early development stage. Right now only *yum* repositories are supported.
 
