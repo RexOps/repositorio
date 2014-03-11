@@ -72,7 +72,6 @@ Just add the repository to your configuration file:
 
 ```
 <Repository custom-centos-6-x86-64>
-  url   = http://ftp.uni-koeln.de/mirrors/fedora/epel/6/x86_64/
   local = custom-centos-6-x86-64/CentOS/6/custom/x86_64/
   type  = Yum
 </Repository
