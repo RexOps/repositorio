@@ -13,6 +13,8 @@ use Data::Dumper;
 use Digest::SHA;
 use Carp;
 use Params::Validate qw(:all);
+use File::Spec;
+use File::Path;
 
 extends "Rex::Repositorio::Repository::Base";
 
@@ -111,25 +113,59 @@ sub mirror {
   }
 }
 
-sub create {
+sub init {
+  my $self = shift;
+
+  my $repo_dir = $self->app->get_repo_dir( repo => $self->repo->{name} );
+  mkpath "$repo_dir/repodata";
+
+  $self->_run_createrepo();
+}
+
+sub add_file {
   my $self   = shift;
   my %option = validate(
     @_,
     {
-      repo => {
+      file => {
         type => SCALAR
-      },
-      update_metadata => {
-        type     => BOOLEAN,
-        optional => 1,
-      },
-      update_files => {
-        type     => BOOLEAN,
-        optional => 1,
       },
     }
   );
 
+  my $dest = $self->app->get_repo_dir( repo => $self->repo->{name} ) . "/"
+    . basename( $option{file} );
+
+  $self->app->add_file_to_repo( source => $option{file}, dest => $dest );
+
+  $self->_run_createrepo();
+}
+
+sub remove_file {
+  my $self = shift;
+
+  my %option = validate(
+    @_,
+    {
+      file => {
+        type => SCALAR
+      },
+    }
+  );
+
+  my $file = $self->app->get_repo_dir( repo => $self->repo->{name} ) . "/"
+    . basename( $option{file} );
+
+  $self->app->remove_file_from_repo( file => $file );
+
+  $self->_run_createrepo();
+}
+
+sub _run_createrepo {
+  my $self = shift;
+
+  my $repo_dir = $self->app->get_repo_dir( repo => $self->repo->{name} );
+  system "cd $repo_dir ; createrepo .";
 }
 
 sub _checksum {

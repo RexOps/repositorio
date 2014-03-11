@@ -22,7 +22,7 @@ RepositoryRoot = /data/repositories
 # this will create the repository inside /data/repositories/head/CentOS/6/rex/x86_64
 <Repository rex-centos-6-x86-64>
   url   = http://nightly.rex.linux-files.org/CentOS/6/rex/x86_64
-  local = CentOS/6/rex/x86_64
+  local = rex-centos-6-x86-64/CentOS/6/rex/x86_64
   type  = Yum
 </Repository>
 ```
@@ -61,6 +61,33 @@ To reload all package files of a repository there is the *--update-files* option
 
 ```
 repositorio --mirror --repo=rex-centos-6-x86-64 --update-files
+```
+
+### Managing a repository
+
+If you need to create a custom repository, you can do this as well.
+
+Just add the repository to your configuration file:
+
+```
+<Repository custom-centos-6-x86-64>
+  url   = http://ftp.uni-koeln.de/mirrors/fedora/epel/6/x86_64/
+  local = custom-centos-6-x86-64/CentOS/6/custom/x86_64/
+  type  = Yum
+</Repository
+```
+
+Initialize the repository:
+
+```
+repositorio --init --repo=custom-centos-6-x86-64
+```
+
+Now you can add and remove files from this directory.
+
+```
+repositorio --add-file=my-package-1.0.rpm --repo=custom-centos-6-x86-64
+repositorio --remove-file=my-package-0.9.rpm --repo=custom-centos-6-x86-64
 ```
 
 

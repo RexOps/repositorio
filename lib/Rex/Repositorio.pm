@@ -19,6 +19,8 @@ use Params::Validate qw(:all);
 use IO::All;
 use File::Path;
 use File::Basename qw'dirname';
+use File::Spec;
+use File::Copy;
 use Rex::Repositorio::Repository_Factory;
 
 our $VERSION = "0.0.1";
@@ -64,6 +66,78 @@ sub parse_cli_option {
   elsif ( exists $option{list} ) {
     $self->list();
   }
+
+  elsif ( exists $option{init} && exists $option{repo} ) {
+    $self->init( repo => $option{repo} );
+  }
+
+  elsif ( exists $option{"add-file"} && exists $option{repo} ) {
+    $self->add_file( file => $option{"add-file"}, repo => $option{repo} );
+  }
+
+  elsif ( exists $option{"remove-file"} && exists $option{repo} ) {
+    $self->remove_file( file => $option{"remove-file"}, repo => $option{repo} );
+  }
+}
+
+sub add_file {
+  my $self   = shift;
+  my %option = validate(
+    @_,
+    {
+      file => {
+        type => SCALAR
+      },
+      repo => {
+        type => SCALAR
+      }
+    }
+  );
+
+  my $repo   = $self->config->{Repository}->{ $option{repo} };
+  my $type   = $repo->{type};
+  my $repo_o = Rex::Repositorio::Repository_Factory->create(
+    type    => $type,
+    options => {
+      app  => $self,
+      repo => {
+        name => $option{repo},
+        %{$repo},
+      }
+    }
+  );
+
+  $repo_o->add_file( file => $option{file} );
+}
+
+sub remove_file {
+  my $self   = shift;
+  my %option = validate(
+    @_,
+    {
+      file => {
+        type => SCALAR
+      },
+      repo => {
+        type => SCALAR
+      }
+    }
+  );
+
+  my $repo   = $self->config->{Repository}->{ $option{repo} };
+  my $type   = $repo->{type};
+  my $repo_o = Rex::Repositorio::Repository_Factory->create(
+    type    => $type,
+    options => {
+      app  => $self,
+      repo => {
+        name => $option{repo},
+        %{$repo},
+      }
+    }
+  );
+
+  $repo_o->remove_file( file => $option{file} );
 }
 
 sub list {
@@ -74,7 +148,7 @@ sub list {
 }
 
 sub init {
-  my $self = shift;
+  my $self   = shift;
   my %option = validate(
     @_,
     {
@@ -84,15 +158,26 @@ sub init {
     }
   );
 
-  my $repo = $self->config->{Repository}->{$option{repo}};
+  my $repo = $self->config->{Repository}->{ $option{repo} };
 
-  if(! $repo) {
+  if ( !$repo ) {
     $self->logger->error("Repository $option{repo} not found.");
     confess "Repository $option{repo} not found.";
   }
 
-  my $type = $repo->{type};
-  my $repo_class = "Rex::Repositorio::Repository::$type";
+  my $type   = $repo->{type};
+  my $repo_o = Rex::Repositorio::Repository_Factory->create(
+    type    => $type,
+    options => {
+      app  => $self,
+      repo => {
+        name => $option{repo},
+        %{$repo},
+      }
+    }
+  );
+
+  $repo_o->init;
 }
 
 sub mirror {
@@ -120,10 +205,10 @@ sub mirror {
   }
 
   for my $repo (@repositories) {
-    my $type     = $self->config->{Repository}->{$repo}->{type};
+    my $type = $self->config->{Repository}->{$repo}->{type};
 
     my $repo_o = Rex::Repositorio::Repository_Factory->create(
-      type => $type,
+      type    => $type,
       options => {
         app  => $self,
         repo => {
@@ -367,6 +452,73 @@ sub _download_binary_file {
   $option{cb}->( $option{dest} ) if ( exists $option{cb} && $option{cb} );
 }
 
+sub get_repo_dir {
+  my $self   = shift;
+  my %option = validate(
+    @_,
+    {
+      repo => {
+        type => SCALAR
+      }
+    }
+  );
+
+  return File::Spec->rel2abs( $self->config->{RepositoryRoot}
+      . "/head/"
+      . $self->config->{Repository}->{ $option{repo} }->{local} );
+}
+
+sub add_file_to_repo {
+  my $self   = shift;
+  my %option = validate(
+    @_,
+    {
+      source => {
+        type => SCALAR
+      },
+      dest => {
+        type => SCALAR
+      }
+    }
+  );
+
+  if ( !-f $option{source} ) {
+    $self->logger->error("Fild $option{source} not found.");
+    confess "Fild $option{source} not found.";
+  }
+
+  $self->logger->debug("Copy $option{source} -> $option{dest}");
+  my $ret = copy $option{source}, $option{dest};
+  if ( !$ret ) {
+    $self->logger->error("Error copying file $option{source} to $option{dest}");
+    confess "Error copying file $option{source} to $option{dest}";
+  }
+}
+
+sub remove_file_from_repo {
+  my $self = shift;
+  my %option = validate(
+    @_,
+    {
+      file => {
+        type => SCALAR
+      }
+    }
+  );
+
+  if ( !-f $option{file} ) {
+    $self->logger->error("Fild $option{file} not found.");
+    confess "Fild $option{file} not found.";
+  }
+
+  $self->logger->debug("Deleting $option{file}.");
+  my $ret = unlink $option{file};
+  if ( !$ret ) {
+    $self->logger->error("Error deleting file $option{file}");
+    confess "Error deleting file $option{file}";
+  }
+}
+
 sub _print {
   my $self  = shift;
   my @lines = @_;
@@ -386,6 +538,9 @@ sub _help {
     "--repo=reponame     the name of the repository to use",
     "--update-metadata   update the metadata of a repository",
     "--update-files      download files even if they are already downloaded",
+    "--init              initialize an empty repository",
+    "--add-file=file     add a file to a repository (needs --repo)",
+    "--remove-file=file  remove a file from a repository (needs --repo)",
     "--list              list known repositories",
     "--help              display this help message",
   );

@@ -33,8 +33,11 @@ $logger->debug("Configuration Dump:");
 $logger->debug( Dumper( \%conf ) );
 
 my %cli;
-GetOptions( \%cli, "mirror", "tag=s", "repo=s", "help", "update-metadata",
-  "update-files", "list" );
+GetOptions(
+  \%cli,        "mirror",          "tag=s",        "repo=s",
+  "help",       "update-metadata", "update-files", "list",
+  "add-file=s", "remove-file=s",   "init"
+);
 
 my $app = Rex::Repositorio->new( config => \%conf, logger => $logger );
 $app->run(%cli);
