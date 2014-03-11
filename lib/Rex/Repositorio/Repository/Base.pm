@@ -4,7 +4,7 @@
 # vim: set ts=2 sw=2 tw=0:
 # vim: set expandtab:
 
-package Rex::RepoMirror::Repository::Base;
+package Rex::Repositorio::Repository::Base;
 
 use Moo;
 use Try::Tiny;

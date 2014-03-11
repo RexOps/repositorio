@@ -21,3 +21,5 @@ doc/html
 *.txt
 screencasts
 log/*
+tmp
+repo

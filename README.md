@@ -1,15 +1,15 @@
-## repo-mirror - A tool to mirror linux repositories.
+## repositorio - A tool to mirror and administrate linux repositories.
 
-repo-mirror is a tool to mirror linux repositories and to tag them.
+repositorio is a tool to mirror and administrate linux repositories and to tag them.
 
 ### Supported Repositories
 
-Currently repo-mirror is in early development stage. Right now only *yum* repositories are supported.
+Currently repositorio is in early development stage. Right now only *yum* repositories are supported.
 
 
 ### Configuration
 
-To configure repo-mirror create a configuration file */etc/rex/repo-mirror.conf*.
+To configure repositorio create a configuration file */etc/rex/repositorio.conf*.
 
 ```
 RepositoryRoot = /data/repositories
@@ -27,13 +27,13 @@ RepositoryRoot = /data/repositories
 </Repository>
 ```
 
-You also need to create a Log4perl configuration file. You can set the location in repo-mirror.conf file.
+You also need to create a Log4perl configuration file. You can set the location in repositorio.conf file.
 
 ```
 log4perl.rootLogger                    = DEBUG, FileAppndr1
 
 log4perl.appender.FileAppndr1          = Log::Log4perl::Appender::File
-log4perl.appender.FileAppndr1.filename = /var/log/repo-mirror.log
+log4perl.appender.FileAppndr1.filename = /var/log/repositorio.log
 log4perl.appender.FileAppndr1.layout   = Log::Log4perl::Layout::SimpleLayout
 ```
 
@@ -42,25 +42,25 @@ log4perl.appender.FileAppndr1.layout   = Log::Log4perl::Layout::SimpleLayout
 To mirror a defined repository you can use the following command:
 
 ```
-repo-mirror --mirror --repo=rex-centos-6-x86-64
+repositorio --mirror --repo=rex-centos-6-x86-64
 ```
 
 To mirror every configured directory, you can use the **all** keyword.
 
 ```
-repo-mirror --mirror --repo=all
+repositorio --mirror --repo=all
 ```
 
 To reload the metadata of a repository there is the *--update-metadata* option.
 
 ```
-repo-mirror --mirror --repo=rex-centos-6-x86-64 --update-metadata
+repositorio --mirror --repo=rex-centos-6-x86-64 --update-metadata
 ```
 
 To reload all package files of a repository there is the *--update-files* option.
 
 ```
-repo-mirror --mirror --repo=rex-centos-6-x86-64 --update-files
+repositorio --mirror --repo=rex-centos-6-x86-64 --update-files
 ```
 
 
@@ -72,5 +72,5 @@ you can do this with the *--tag* option.
 A tag is just a hardlinked copy of the *head* tag.
 
 ```
-repo-mirror --tag=production --repo=rex-centos-6-x86-64
+repositorio --tag=production --repo=rex-centos-6-x86-64
 ```

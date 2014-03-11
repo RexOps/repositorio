@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 
-use Rex::RepoMirror;
+use Rex::Repositorio;
 
 use common::sense;
 use Carp;
@@ -10,8 +10,8 @@ use Data::Dumper;
 use Getopt::Long;
 
 my @config_file_locations = (
-  "/etc/rex/repo-mirror.conf", "/usr/local/etc/rex/repo-mirror.conf",
-  "./repo-mirror.conf"
+  "/etc/rex/repositorio.conf", "/usr/local/etc/rex/repositorio.conf",
+  "./repositorio.conf"
 );
 
 my ($config_file) = grep { -f $_ } @config_file_locations;
@@ -27,7 +27,7 @@ my %conf   = $conf_o->getall;
 Log::Log4perl::init( $conf{Log4perl}{config} );
 my $logger = Log::Log4perl->get_logger();
 
-$logger->info("repo-mirror started.");
+$logger->info("repositorio started.");
 $logger->debug("Logger initialized.");
 $logger->debug("Configuration Dump:");
 $logger->debug( Dumper( \%conf ) );
@@ -36,5 +36,5 @@ my %cli;
 GetOptions( \%cli, "mirror", "tag=s", "repo=s", "help", "update-metadata",
   "update-files" );
 
-my $app = Rex::RepoMirror->new( config => \%conf, logger => $logger );
+my $app = Rex::Repositorio->new( config => \%conf, logger => $logger );
 $app->run(%cli);

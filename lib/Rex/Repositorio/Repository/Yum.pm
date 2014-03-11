@@ -4,7 +4,7 @@
 # vim: set ts=2 sw=2 tw=0:
 # vim: set expandtab:
 
-package Rex::RepoMirror::Repository::Yum;
+package Rex::Repositorio::Repository::Yum;
 
 use Moo;
 use Try::Tiny;
@@ -13,37 +13,61 @@ use Data::Dumper;
 use Digest::SHA;
 use Carp;
 
-extends "Rex::RepoMirror::Repository::Base";
+extends "Rex::Repositorio::Repository::Base";
 
 sub mirror {
   my ( $self, %option ) = @_;
 
   $self->repo->{url} =~ s/\/$//;
   $self->repo->{local} =~ s/\/$//;
+  my $name = $self->repo->{name};
 
   my $repomd_ref =
     $self->app->decode_xml(
     $self->app->download( $self->repo->{url} . "/repodata/repomd.xml" ) );
 
   my ($primary_file) =
-    map { $_ = $_->{location}->[0]->{href} }
     grep { $_->{type} eq "primary" } @{ $repomd_ref->{data} };
+  $primary_file = $primary_file->{location}->[0]->{href};
 
   my $url = $self->repo->{url} . "/" . $primary_file;
   $self->app->logger->debug("Downloading $url.");
-  my $ref = $self->app->decode_xml( $self->app->download_gzip($url) );
-  for my $package ( @{ $ref->{package} } ) {
-    my $package_url =
-      $self->repo->{url} . "/" . $package->{location}->[0]->{href};
-    my $package_name = $package->{name}->[0];
+  my $xml = $self->app->get_xml( $self->app->download_gzip($url) );
 
-    my $local_file = $self->repo->{local} . "/" . basename($package_url);
+  my @packages;
+  my @xml_packages = $xml->getElementsByTagName('package');
+  for my $xml_package (@xml_packages) {
+    my ($name_node)     = $xml_package->getChildrenByTagName("name");
+    my ($checksum_node) = $xml_package->getChildrenByTagName("checksum");
+    my ($size_node)     = $xml_package->getChildrenByTagName("size");
+    my ($location_node) = $xml_package->getChildrenByTagName("location");
+    push @packages,
+      {
+      location => $location_node->getAttribute("href"),
+      name     => $name_node->textContent,
+      checksum => {
+        type => $checksum_node->getAttribute("type"),
+        data => $checksum_node->textContent,
+      },
+      size => $size_node->getAttribute("archive"),
+      };
+  }
+
+  for my $package (@packages) {
+    my $package_url  = $self->repo->{url} . "/" . $package->{location};
+    my $package_name = $package->{name};
+
+    my $local_file = $self->repo->{local} . "/" . $package->{location};
     $self->app->download_package(
       url  => $package_url,
       name => $package_name,
       dest => $local_file,
       cb   => sub {
-        $self->_checksum( @_, $package->{checksum}->[0]->{content} );
+        $self->_checksum(
+          @_,
+          $package->{checksum}->{type},
+          $package->{checksum}->{data}
+        );
       },
       force => $option{update_files}
     );
@@ -75,7 +99,7 @@ sub mirror {
       url  => $file_url,
       dest => $self->repo->{local} . "/repodata/$file",
       cb   => sub {
-        $self->_checksum( @_, $file_data->{checksum}->[0]->{content} );
+        $self->_checksum( @_, $file_data->{checksum}->[0]->{type}, $file_data->{checksum}->[0]->{content} );
       },
       force => $option{update_metadata},
     );
@@ -83,8 +107,14 @@ sub mirror {
 }
 
 sub _checksum {
-  my ( $self, $file, $wanted_checksum ) = @_;
-  my $sha = Digest::SHA->new(1);
+  my ( $self, $file, $type, $wanted_checksum ) = @_;
+
+  my $c_type = 1;
+  if ( $type eq "sha256" ) {
+    $c_type = "256";
+  }
+
+  my $sha = Digest::SHA->new($c_type);
   $sha->addfile($file);
   my $file_checksum = $sha->hexdigest;
 

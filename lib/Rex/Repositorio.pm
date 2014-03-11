@@ -4,7 +4,7 @@
 # vim: set ts=2 sw=2 tw=0:
 # vim: set expandtab:
 
-package Rex::RepoMirror;
+package Rex::Repositorio;
 
 use Moo;
 use English;
@@ -12,6 +12,8 @@ use common::sense;
 use Carp;
 use LWP::UserAgent;
 use Compress::Zlib;
+use Compress::Bzip2;
+use XML::LibXML;
 use XML::Simple;
 use Params::Validate qw(:all);
 use IO::All;
@@ -85,7 +87,7 @@ sub mirror {
 
   for my $repo (@repositories) {
     my $type     = $self->config->{Repository}->{$repo}->{type};
-    my $repo_mod = "Rex::RepoMirror::Repository::$type";
+    my $repo_mod = "Rex::Repositorio::Repository::$type";
     eval "use $repo_mod;";
     if ($EVAL_ERROR) {
       confess "Error loading repository type: $type. ($EVAL_ERROR)";
@@ -153,7 +155,27 @@ sub tag {
 sub download_gzip {
   my ( $self, $url ) = @_;
 
-  my $un_content = Compress::Zlib::memGunzip( $self->download($url) );
+  my $content = $self->download($url);
+
+  $self->logger->debug("Starting uncompressing of: $url");
+  my $un_content = Compress::Zlib::memGunzip($content);
+  $self->logger->debug("Finished uncompressing of: $url");
+  if ( !$un_content ) {
+    $self->logger->error("Error uncompressing data.");
+    confess "Error uncompressing data.";
+  }
+
+  return $un_content;
+}
+
+sub download_bzip2 {
+  my ( $self, $url ) = @_;
+
+  my $content = $self->download($url);
+
+  $self->logger->debug("Starting uncompressing of: $url");
+  my $un_content = Compress::Bzip2::memBunzip($content);
+  $self->logger->debug("Finished uncompressing of: $url");
   if ( !$un_content ) {
     $self->logger->error("Error uncompressing data.");
     confess "Error uncompressing data.";
@@ -165,7 +187,9 @@ sub download_gzip {
 sub download {
   my ( $self, $url ) = @_;
 
+  $self->logger->debug("Starting download of: $url");
   my $resp = $self->ua->get($url);
+  $self->logger->debug("Finished download of: $url");
 
   if ( !$resp->is_success ) {
     $self->logger->error("Can't download $url.");
@@ -174,6 +198,11 @@ sub download {
   }
 
   return $resp->content;
+}
+
+sub get_xml {
+  my ( $self, $xml ) = @_;
+  return XML::LibXML->load_xml(string => $xml);
 }
 
 sub decode_xml {
