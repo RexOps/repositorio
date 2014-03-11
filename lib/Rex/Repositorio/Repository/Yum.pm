@@ -12,6 +12,7 @@ use File::Basename qw'basename';
 use Data::Dumper;
 use Digest::SHA;
 use Carp;
+use Params::Validate qw(:all);
 
 extends "Rex::Repositorio::Repository::Base";
 
@@ -99,11 +100,36 @@ sub mirror {
       url  => $file_url,
       dest => $self->repo->{local} . "/repodata/$file",
       cb   => sub {
-        $self->_checksum( @_, $file_data->{checksum}->[0]->{type}, $file_data->{checksum}->[0]->{content} );
+        $self->_checksum(
+          @_,
+          $file_data->{checksum}->[0]->{type},
+          $file_data->{checksum}->[0]->{content}
+        );
       },
       force => $option{update_metadata},
     );
   }
+}
+
+sub create {
+  my $self   = shift;
+  my %option = validate(
+    @_,
+    {
+      repo => {
+        type => SCALAR
+      },
+      update_metadata => {
+        type     => BOOLEAN,
+        optional => 1,
+      },
+      update_files => {
+        type     => BOOLEAN,
+        optional => 1,
+      },
+    }
+  );
+
 }
 
 sub _checksum {

@@ -19,6 +19,7 @@ use Params::Validate qw(:all);
 use IO::All;
 use File::Path;
 use File::Basename qw'dirname';
+use Rex::Repositorio::Repository_Factory;
 
 our $VERSION = "0.0.1";
 
@@ -59,6 +60,39 @@ sub parse_cli_option {
   elsif ( exists $option{tag} && exists $option{repo} ) {
     $self->tag( tag => $option{tag}, repo => $option{repo} );
   }
+
+  elsif ( exists $option{list} ) {
+    $self->list();
+  }
+}
+
+sub list {
+  my $self  = shift;
+  my @repos = keys %{ $self->config->{Repository} };
+
+  $self->_print(@repos);
+}
+
+sub init {
+  my $self = shift;
+  my %option = validate(
+    @_,
+    {
+      repo => {
+        type => SCALAR
+      }
+    }
+  );
+
+  my $repo = $self->config->{Repository}->{$option{repo}};
+
+  if(! $repo) {
+    $self->logger->error("Repository $option{repo} not found.");
+    confess "Repository $option{repo} not found.";
+  }
+
+  my $type = $repo->{type};
+  my $repo_class = "Rex::Repositorio::Repository::$type";
 }
 
 sub mirror {
@@ -87,19 +121,18 @@ sub mirror {
 
   for my $repo (@repositories) {
     my $type     = $self->config->{Repository}->{$repo}->{type};
-    my $repo_mod = "Rex::Repositorio::Repository::$type";
-    eval "use $repo_mod;";
-    if ($EVAL_ERROR) {
-      confess "Error loading repository type: $type. ($EVAL_ERROR)";
-    }
 
-    my $repo_o = $repo_mod->new(
-      app  => $self,
-      repo => {
-        name => $repo,
-        %{ $self->config->{Repository}->{$repo} },
+    my $repo_o = Rex::Repositorio::Repository_Factory->create(
+      type => $type,
+      options => {
+        app  => $self,
+        repo => {
+          name => $repo,
+          %{ $self->config->{Repository}->{$repo} },
+        }
       }
     );
+
     $repo_o->mirror(
       update_metadata => $option{update_metadata},
       update_files    => $option{update_files}
@@ -202,7 +235,7 @@ sub download {
 
 sub get_xml {
   my ( $self, $xml ) = @_;
-  return XML::LibXML->load_xml(string => $xml);
+  return XML::LibXML->load_xml( string => $xml );
 }
 
 sub decode_xml {
@@ -334,19 +367,28 @@ sub _download_binary_file {
   $option{cb}->( $option{dest} ) if ( exists $option{cb} && $option{cb} );
 }
 
+sub _print {
+  my $self  = shift;
+  my @lines = @_;
+
+  print "repositorio: $VERSION\n";
+  print "-" x 80;
+  print "\n";
+  print "$_\n" for @lines;
+}
+
 sub _help {
   my ($self) = @_;
 
-  print "repo-mirror: $VERSION\n";
-  print "-" x 80;
-  print "\n";
-  print "--mirror            mirror a configured repository (needs --repo)\n";
-  print "--tag=tagname       tag a repository (needs --repo)\n";
-  print "--repo=reponame     the name of the repository to use.\n";
-  print "--update-metadata   update the metadata of a repository\n";
-  print
-    "--update-files      download files even if they are already downloaded\n";
-  print "--help              display this help message\n";
+  $self->_print(
+    "--mirror            mirror a configured repository (needs --repo)",
+    "--tag=tagname       tag a repository (needs --repo)",
+    "--repo=reponame     the name of the repository to use",
+    "--update-metadata   update the metadata of a repository",
+    "--update-files      download files even if they are already downloaded",
+    "--list              list known repositories",
+    "--help              display this help message",
+  );
 
 }
 

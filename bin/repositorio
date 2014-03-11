@@ -34,7 +34,7 @@ $logger->debug( Dumper( \%conf ) );
 
 my %cli;
 GetOptions( \%cli, "mirror", "tag=s", "repo=s", "help", "update-metadata",
-  "update-files" );
+  "update-files", "list" );
 
 my $app = Rex::Repositorio->new( config => \%conf, logger => $logger );
 $app->run(%cli);
