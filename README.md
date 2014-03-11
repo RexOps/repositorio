@@ -19,7 +19,8 @@ RepositoryRoot = /data/repositories
 </Log4perl>
 
 
-# this will create the repository inside /data/repositories/head/rex-centos-6-x86-64/CentOS/6/rex/x86_64
+# this will create the repository inside
+# /data/repositories/head/rex-centos-6-x86-64/CentOS/6/rex/x86_64
 <Repository rex-centos-6-x86-64>
   url   = http://nightly.rex.linux-files.org/CentOS/6/rex/x86_64
   local = rex-centos-6-x86-64/CentOS/6/rex/x86_64
