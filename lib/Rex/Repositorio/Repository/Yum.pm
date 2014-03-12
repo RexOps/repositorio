@@ -111,6 +111,25 @@ sub mirror {
       force => $option{update_metadata},
     );
   }
+
+  if ( $self->repo->{images} eq "true" ) {
+    for my $file (
+      (
+        "images/boot.iso",           "images/efiboot.img",
+        "images/efidisk.img",        "images/install.img",
+        "images/pxeboot/initrd.img", "images/pxeboot/vmlinuz"
+      )
+      )
+    {
+      my $file_url   = $self->repo->{url} . "/" . $file;
+      my $local_file = $self->repo->{local} . "/" . $file;
+      $self->app->download_package(
+        url  => $file_url,
+        name => $file,
+        dest => $local_file,
+      );
+    }
+  }
 }
 
 sub init {

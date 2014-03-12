@@ -343,7 +343,8 @@ sub download_package {
         type => SCALAR
       },
       cb => {
-        type => CODEREF
+        type     => CODEREF,
+        optional => 1,
       },
       force => {
         type     => BOOLEAN,
@@ -496,7 +497,7 @@ sub add_file_to_repo {
 }
 
 sub remove_file_from_repo {
-  my $self = shift;
+  my $self   = shift;
   my %option = validate(
     @_,
     {
