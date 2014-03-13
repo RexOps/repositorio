@@ -112,7 +112,7 @@ sub mirror {
     );
   }
 
-  if ( $self->repo->{images} eq "true" ) {
+  if ( exists $self->repo->{images} && $self->repo->{images} eq "true" ) {
     for my $file (
       (
         "images/boot.iso",           "images/efiboot.img",
