@@ -6,7 +6,7 @@
 
 package Rex::Repositorio::Repository::Yum;
 
-use Moo;
+use Moose;
 use Try::Tiny;
 use File::Basename qw'basename';
 use Data::Dumper;

@@ -6,7 +6,7 @@
 
 package Rex::Repositorio;
 
-use Moo;
+use Moose;
 use English;
 use common::sense;
 use Carp;
@@ -77,6 +77,11 @@ sub parse_cli_option {
 
   elsif ( exists $option{"remove-file"} && exists $option{repo} ) {
     $self->remove_file( file => $option{"remove-file"}, repo => $option{repo} );
+  }
+
+  else {
+    $self->_help();
+    exit 0;
   }
 }
 

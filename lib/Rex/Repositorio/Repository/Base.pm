@@ -6,7 +6,7 @@
 
 package Rex::Repositorio::Repository::Base;
 
-use Moo;
+use Moose;
 use Try::Tiny;
 use common::sense;
 use Carp;
