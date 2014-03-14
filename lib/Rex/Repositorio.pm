@@ -11,8 +11,6 @@ use English;
 use common::sense;
 use Carp;
 use LWP::UserAgent;
-use Compress::Zlib;
-use Compress::Bzip2;
 use XML::LibXML;
 use XML::Simple;
 use Params::Validate qw(:all);
@@ -280,7 +278,10 @@ sub download_gzip {
 
   my $content = $self->download($url);
 
+  require Compress::Zlib;
+
   $self->logger->debug("Starting uncompressing of: $url");
+
   my $un_content = Compress::Zlib::memGunzip($content);
   $self->logger->debug("Finished uncompressing of: $url");
   if ( !$un_content ) {
@@ -293,6 +294,8 @@ sub download_gzip {
 
 sub download_bzip2 {
   my ( $self, $url ) = @_;
+
+  require Compress::Bzip2;
 
   my $content = $self->download($url);
 
