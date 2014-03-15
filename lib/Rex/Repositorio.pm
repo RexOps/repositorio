@@ -292,24 +292,6 @@ sub download_gzip {
   return $un_content;
 }
 
-sub download_bzip2 {
-  my ( $self, $url ) = @_;
-
-  require Compress::Bzip2;
-
-  my $content = $self->download($url);
-
-  $self->logger->debug("Starting uncompressing of: $url");
-  my $un_content = Compress::Bzip2::memBunzip($content);
-  $self->logger->debug("Finished uncompressing of: $url");
-  if ( !$un_content ) {
-    $self->logger->error("Error uncompressing data.");
-    confess "Error uncompressing data.";
-  }
-
-  return $un_content;
-}
-
 sub download {
   my ( $self, $url ) = @_;
 
@@ -557,3 +539,102 @@ sub _help {
 }
 
 1;
+
+
+__END__
+
+=pod
+
+=head1 repositor.io - Linux Repository Management
+
+repositor.io is a tool to create and manage linux repositories.
+You can mirror online repositories so that you don't need to download the
+package every time you set up a new server. You can also secure your servers
+behind a firewall and disable outgoing http traffic.
+
+With repositor.io it is easy to create custom repositories for your own
+packages. With the integration of a configuration management tool you can
+create consistant installations of your server.
+
+=head2 GETTING HELP
+
+=over 4
+
+=item * Web Site: L<http://repositor.io/>
+
+=item * IRC: irc.freenode.net #repositorio
+
+=item * Bug Tracker: L<https://github.com/krimdomu/repositorio/issues>
+
+=item * Twitter: L<http://twitter.com/jfried83>
+
+=back
+
+=head2 COMMAND LINE
+
+=over 4
+
+=item --mirror            mirror a configured repository (needs --repo)
+
+=item --tag=tagname       tag a repository (needs --repo)
+
+=item --repo=reponame     the name of the repository to use
+
+=item --update-metadata   update the metadata of a repository
+
+=item --update-files      download files even if they are already downloaded
+
+=item --init              initialize an empty repository
+
+=item --add-file=file     add a file to a repository (needs --repo)
+
+=item --remove-file=file  remove a file from a repository (needs --repo)
+
+=item --list              list known repositories
+
+=item --help              display this help message
+
+=back
+
+=head2 CONFIGURATION
+
+To configure repositor.io create a configuration file
+I</etc/rex/repositorio.conf>.
+ RepositoryRoot = /srv/html/repo/
+    
+ # log4perl configuration file
+ <Log4perl>
+   config = /etc/rex/io/log4perl.conf
+ </Log4perl>
+    
+ # create a mirror of the nightly rex repository
+ # the files will be stored in
+ # /srv/html/repo/head/rex-centos-6-x86-64/CentOS/6/rex/x86_64/
+ <Repository rex-centos-6-x86-64>
+   url   = http://nightly.rex.linux-files.org/CentOS/6/rex/x86_64/
+   local = rex-centos-6-x86-64/CentOS/6/rex/x86_64/
+   type  = Yum
+ </Repository>
+    
+ # create a mirror of centos 6
+ # and download the pxe boot files, too.
+ <Repository centos-6-x86-64>
+   url    = http://ftp.hosteurope.de/mirror/centos.org/6/os/x86_64/
+   local  = centos-6-x86-64/CentOS/6/os/x86_64/
+   type   = Yum
+   images = true
+ </Repository>
+    
+ # create a custom repository
+ <Repository centos-6-x86-64-mixed>
+   local = centos-6-x86-64-mixed/mixed/6/x86_64/
+   type  = Yum
+ </Repository>
+
+An example log4perl.conf file:
+
+ log4perl.rootLogger                    = DEBUG, FileAppndr1
+   
+ log4perl.appender.FileAppndr1          = Log::Log4perl::Appender::File
+ log4perl.appender.FileAppndr1.filename = /var/log/repositorio.log
+ log4perl.appender.FileAppndr1.layout   = Log::Log4perl::Layout::SimpleLayout

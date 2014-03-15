@@ -9,7 +9,6 @@ my %deps = (
   'Moose'            => 0,
   'LWP::UserAgent'   => 0,
   'Try::Tiny'        => 0,
-  'Compress::Bzip2'  => 0,
   'XML::Simple'      => 0,
   'Params::Validate' => 0,
   'IO::All'          => 0,
