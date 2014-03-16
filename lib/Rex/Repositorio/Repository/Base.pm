@@ -21,6 +21,7 @@ use File::Basename qw'dirname';
 use File::Spec;
 use File::Copy;
 use Digest::SHA;
+use Digest::MD5;
 
 has app  => ( is => 'ro' );
 has repo => ( is => 'ro' );
@@ -248,6 +249,26 @@ sub remove_file_from_repo {
   }
 }
 
+sub _checksum_md5 {
+  my ( $self, $file, $wanted_checksum ) = @_;
+  my $md5 = Digest::MD5->new;
+  open my $fh, "<", $file;
+  binmode $fh;
+  $md5->addfile($fh);
+
+  my $file_checksum = $md5->hexdigest;
+
+  close $fh;
+
+  $self->app->logger->debug(
+    "wanted_checksum: $wanted_checksum == $file_checksum");
+
+  if ( $wanted_checksum ne $file_checksum ) {
+    $self->app->logger->error("Checksum for $file wrong.");
+    confess "Checksum of $file wrong.";
+  }
+}
+
 sub _checksum {
   my ( $self, $file, $type, $wanted_checksum ) = @_;
 
@@ -255,7 +276,10 @@ sub _checksum {
   if ( $type eq "sha256" ) {
     $c_type = "256";
   }
-
+  elsif ( $type eq "md5" ) {
+    return $self->_checksum_md5( $file, $wanted_checksum );
+  }
+  
   my $sha = Digest::SHA->new($c_type);
   $sha->addfile($file);
   my $file_checksum = $sha->hexdigest;

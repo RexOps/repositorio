@@ -36,22 +36,37 @@ sub mirror {
   my $url      = $self->repo->{url} . "/dists/$dist";
   my $contents = $self->download("$url/Release");
   my $ref      = $self->_parse_debian_release_file($contents);
+  my $arch     = $self->repo->{arch};
 
+  my $i = 0;
   for my $file_data ( @{ $ref->{SHA1} } ) {
     my $file_url = $url . "/" . $file_data->{file};
     my $file     = $file_data->{file};
+    next if($file_data->{file} !~ m/\-$arch/);
 
     $self->download_metadata(
       url  => $file_url,
       dest => $self->repo->{local} . "/dists/$dist/$file",
       cb   => sub {
+        my ($file) = @_;
         if ( $file eq "Release" ) { return; }
 
-        $self->_checksum( @_, "sha1", $file_data->{checksum} );
+        my $sha1_ok = 0;
+        my $md5_ok  = 0;
+        try {
+          my $sha1 = $ref->{SHA1}->[$i]->{checksum};
+          $self->_checksum( $file, "sha1", $sha1 );
+          $sha1_ok = 1;
+        }
+        catch {
+          $self->app->logger->info( "Checksum of $file_url wrong. "
+              . "If this is an Ubuntu mirror, this might be normal?" );
+        };
       },
       force => $option{update_metadata},
     );
 
+    $i++;
   }
 
   ##############################################################################
