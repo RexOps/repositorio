@@ -53,7 +53,7 @@ sub mirror {
     }
     catch {
       $self->app->logger->info(
-        "Can't find the url: $file_url." . "This should be no problem." );
+        "Can't find the url: $file_url. " . "This should be no problem." );
       $self->app->logger->info($_);
     };
 
