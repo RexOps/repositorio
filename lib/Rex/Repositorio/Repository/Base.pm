@@ -45,6 +45,13 @@ sub download_gzip {
   return $un_content;
 }
 
+sub gunzip {
+  my ( $self, $data ) = @_;
+  require Compress::Zlib;
+
+  return Compress::Zlib::memGunzip($data);
+}
+
 sub download {
   my ( $self, $url ) = @_;
 
@@ -279,7 +286,7 @@ sub _checksum {
   elsif ( $type eq "md5" ) {
     return $self->_checksum_md5( $file, $wanted_checksum );
   }
-  
+
   my $sha = Digest::SHA->new($c_type);
   $sha->addfile($file);
   my $file_checksum = $sha->hexdigest;

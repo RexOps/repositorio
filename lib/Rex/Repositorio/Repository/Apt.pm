@@ -42,27 +42,11 @@ sub mirror {
   for my $file_data ( @{ $ref->{SHA1} } ) {
     my $file_url = $url . "/" . $file_data->{file};
     my $file     = $file_data->{file};
-    next if($file_data->{file} !~ m/\-$arch/);
+    next if ( $file_data->{file} !~ m/\-$arch/ );
 
     $self->download_metadata(
-      url  => $file_url,
-      dest => $self->repo->{local} . "/dists/$dist/$file",
-      cb   => sub {
-        my ($file) = @_;
-        if ( $file eq "Release" ) { return; }
-
-        my $sha1_ok = 0;
-        my $md5_ok  = 0;
-        try {
-          my $sha1 = $ref->{SHA1}->[$i]->{checksum};
-          $self->_checksum( $file, "sha1", $sha1 );
-          $sha1_ok = 1;
-        }
-        catch {
-          $self->app->logger->info( "Checksum of $file_url wrong. "
-              . "If this is an Ubuntu mirror, this might be normal?" );
-        };
-      },
+      url   => $file_url,
+      dest  => $self->repo->{local} . "/dists/$dist/$file",
       force => $option{update_metadata},
     );
 
@@ -89,10 +73,10 @@ sub mirror {
       $self->app->logger->debug("Processing ($name, $component) $dist / $arch");
 
       my $local_packages_path =
-        $local_components_path . "/binary-$arch/Packages";
+        $local_components_path . "/binary-$arch/Packages.gz";
 
       $self->app->logger->debug("Reading: $local_packages_path");
-      my $content     = io($local_packages_path)->slurp;
+      my $content     = $self->gunzip( io($local_packages_path)->binary->all );
       my $package_ref = $self->_parse_debian_package_file($content);
 
       for my $package ( @{$package_ref} ) {
