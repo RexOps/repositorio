@@ -44,11 +44,18 @@ sub mirror {
     my $file     = $file_data->{file};
     next if ( $file_data->{file} !~ m/(Contents|binary|installer)\-$arch/ );
 
-    $self->download_metadata(
-      url   => $file_url,
-      dest  => $self->repo->{local} . "/dists/$dist/$file",
-      force => $option{update_metadata},
-    );
+    try {
+      $self->download_metadata(
+        url   => $file_url,
+        dest  => $self->repo->{local} . "/dists/$dist/$file",
+        force => $option{update_metadata},
+      );
+    }
+    catch {
+      $self->app->logger->info(
+        "Can't find the url: $file_url." . "This should be no problem." );
+      $self->app->logger->info($_);
+    };
 
     $i++;
   }
