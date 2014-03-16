@@ -207,7 +207,12 @@ sub init {
   my $desc      = $self->repo->{description} || "$component repository";
 
   my $repo_dir = $self->app->get_repo_dir( repo => $self->repo->{name} );
-  mkpath "$repo_dir/dists/$dist/$component";
+  mkpath "$repo_dir/dists/$dist/$component/binary-$arch";
+
+  my $pool_dir = $self->app->get_repo_dir( repo => $self->repo->{name} ) . "/"
+    . "pool/$dist/$component/";
+
+  mkpath $pool_dir;
 
   my $aptftp      = io("$repo_dir/aptftp.conf");
   my $aptgenerate = io("$repo_dir/aptgenerate.conf");
@@ -267,10 +272,6 @@ sub add_file {
       $self->app->get_repo_dir( repo => $self->repo->{name} ) . "/"
     . "pool/$dist/$component/"
     . basename( $option{file} );
-
-  if ( !-d dirname($dest) ) {
-    mkpath dirname($dest);
-  }
 
   $self->add_file_to_repo( source => $option{file}, dest => $dest );
 
