@@ -20,6 +20,7 @@ use File::Path;
 use File::Basename qw'dirname';
 use File::Spec;
 use File::Copy;
+use Digest::SHA;
 
 has app  => ( is => 'ro' );
 has repo => ( is => 'ro' );
@@ -244,6 +245,27 @@ sub remove_file_from_repo {
   if ( !$ret ) {
     $self->app->logger->error("Error deleting file $option{file}");
     confess "Error deleting file $option{file}";
+  }
+}
+
+sub _checksum {
+  my ( $self, $file, $type, $wanted_checksum ) = @_;
+
+  my $c_type = 1;
+  if ( $type eq "sha256" ) {
+    $c_type = "256";
+  }
+
+  my $sha = Digest::SHA->new($c_type);
+  $sha->addfile($file);
+  my $file_checksum = $sha->hexdigest;
+
+  $self->app->logger->debug(
+    "wanted_checksum: $wanted_checksum == $file_checksum");
+
+  if ( $wanted_checksum ne $file_checksum ) {
+    $self->app->logger->error("Checksum for $file wrong.");
+    confess "Checksum of $file wrong.";
   }
 }
 

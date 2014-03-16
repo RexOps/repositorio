@@ -10,7 +10,6 @@ use Moose;
 use Try::Tiny;
 use File::Basename qw'basename';
 use Data::Dumper;
-use Digest::SHA;
 use Carp;
 use Params::Validate qw(:all);
 use File::Spec;
@@ -185,27 +184,6 @@ sub _run_createrepo {
 
   my $repo_dir = $self->app->get_repo_dir( repo => $self->repo->{name} );
   system "cd $repo_dir ; createrepo .";
-}
-
-sub _checksum {
-  my ( $self, $file, $type, $wanted_checksum ) = @_;
-
-  my $c_type = 1;
-  if ( $type eq "sha256" ) {
-    $c_type = "256";
-  }
-
-  my $sha = Digest::SHA->new($c_type);
-  $sha->addfile($file);
-  my $file_checksum = $sha->hexdigest;
-
-  $self->app->logger->debug(
-    "wanted_checksum: $wanted_checksum == $file_checksum");
-
-  if ( $wanted_checksum ne $file_checksum ) {
-    $self->app->logger->error("Checksum for $file wrong.");
-    confess "Checksum of $file wrong.";
-  }
 }
 
 1;
