@@ -42,7 +42,7 @@ sub mirror {
   for my $file_data ( @{ $ref->{SHA1} } ) {
     my $file_url = $url . "/" . $file_data->{file};
     my $file     = $file_data->{file};
-    next if ( $file_data->{file} !~ m/\-$arch/ );
+    next if ( $file_data->{file} !~ m/(Contents|binary|installer)\-$arch/ );
 
     $self->download_metadata(
       url   => $file_url,
