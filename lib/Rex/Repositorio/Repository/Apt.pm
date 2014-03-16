@@ -8,7 +8,7 @@ package Rex::Repositorio::Repository::Apt;
 
 use Moose;
 use Try::Tiny;
-use File::Basename qw'basename';
+use File::Basename qw'basename dirname';
 use Data::Dumper;
 use Digest::SHA;
 use Carp;
@@ -57,7 +57,13 @@ sub mirror {
   ##############################################################################
   # download packages
   ##############################################################################
-  my @components = split /, ?/, $self->repo->{components};
+  my @components;
+  if ( exists $self->repo->{components} ) {
+    @components = split /, ?/, $self->repo->{components};
+  }
+  else {
+    @components = ( $self->repo->{component} );
+  }
   for my $component (@components) {
 
     my $local_components_path =
@@ -190,6 +196,122 @@ sub _parse_debian_package_file {
   }
 
   return \@ret;
+}
+
+sub init {
+  my $self = shift;
+
+  my $dist      = $self->repo->{dist};
+  my $arch      = $self->repo->{arch};
+  my $component = $self->repo->{component};
+  my $desc      = $self->repo->{description} || "$component repository";
+
+  my $repo_dir = $self->app->get_repo_dir( repo => $self->repo->{name} );
+  mkpath "$repo_dir/dists/$dist/$component";
+
+  my $aptftp      = io("$repo_dir/aptftp.conf");
+  my $aptgenerate = io("$repo_dir/aptgenerate.conf");
+
+  $aptftp->print(<<"  EOF");
+APT::FTPArchive::Release {
+  Origin "$component";
+  Label "$component";
+  Suite "$dist";
+  Codename "$dist";
+  Architectures "$arch";
+  Components "$component";
+  Description "$desc";
+};
+
+  EOF
+
+  $aptgenerate->print(<<"  EOF");
+Dir::ArchiveDir ".";
+Dir::CacheDir ".";
+TreeDefault::Directory "pool/$dist/";
+TreeDefault::SrcDirectory "pool/$dist/";
+Default::Packages::Extensions ".deb";
+Default::Packages::Compress ". gzip bzip2";
+Default::Sources::Compress "gzip bzip2";
+Default::Contents::Compress "gzip bzip2";
+
+BinDirectory "dists/$dist/$component/binary-$arch" {
+  Packages "dists/$dist/$component/binary-$arch/Packages";
+  Contents "dists/$dist/Contents-$arch";
+};
+
+Tree "dists/$dist" {
+  Sections "$component";
+  Architectures "$arch";
+};
+  EOF
+
+  $self->_run_ftp_archive();
+}
+
+sub add_file {
+  my $self   = shift;
+  my %option = validate(
+    @_,
+    {
+      file => {
+        type => SCALAR
+      },
+    }
+  );
+
+  my $dist      = $self->repo->{dist};
+  my $component = $self->repo->{component};
+
+  my $dest =
+      $self->app->get_repo_dir( repo => $self->repo->{name} ) . "/"
+    . "pool/$dist/$component/"
+    . basename( $option{file} );
+
+  if ( !-d dirname($dest) ) {
+    mkpath dirname($dest);
+  }
+
+  $self->add_file_to_repo( source => $option{file}, dest => $dest );
+
+  $self->_run_ftp_archive();
+}
+
+sub remove_file {
+  my $self = shift;
+
+  my %option = validate(
+    @_,
+    {
+      file => {
+        type => SCALAR
+      },
+    }
+  );
+
+  my $dist      = $self->repo->{dist};
+  my $component = $self->repo->{component};
+
+  my $file =
+      $self->app->get_repo_dir( repo => $self->repo->{name} ) . "/"
+    . "pool/$dist/$component/"
+    . basename( $option{file} );
+
+  $self->remove_file_from_repo( file => $file );
+
+  $self->_run_ftp_archive();
+}
+
+sub _run_ftp_archive {
+  my $self = shift;
+
+  my $dist = $self->repo->{dist};
+  my $repo_dir = $self->app->get_repo_dir( repo => $self->repo->{name} );
+
+  system
+    "cd $repo_dir ; apt-ftparchive generate -c=aptftp.conf aptgenerate.conf";
+  system
+    "cd $repo_dir ; apt-ftparchive release -c=aptftp.conf dists/$dist >dists/$dist/Release";
 }
 
 1;
