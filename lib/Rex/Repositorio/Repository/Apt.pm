@@ -38,11 +38,30 @@ sub mirror {
   my $ref      = $self->_parse_debian_release_file($contents);
   my $arch     = $self->repo->{arch};
 
+  # try download Release and Release.gpg
+  try {
+    $self->download_metadata(
+      url   => $url . "/Release",
+      dest  => $self->repo->{local} . "/dists/$dist/Release",
+      force => $option{update_metadata},
+    );
+
+    $self->download_metadata(
+      url   => $url . "/Release.gpg",
+      dest  => $self->repo->{local} . "/dists/$dist/Release.gpg",
+      force => $option{update_metadata},
+    );
+  }
+  catch {
+    $self->app->logger->error($_);
+  };
+
   my $i = 0;
   for my $file_data ( @{ $ref->{SHA1} } ) {
     my $file_url = $url . "/" . $file_data->{file};
     my $file     = $file_data->{file};
-    next if ( $file_data->{file} !~ m/(Contents|binary|installer)\-$arch/ );
+    next
+      if ( $file_data->{file} !~ m/i18n|((Contents|binary|installer)\-$arch)/ );
 
     try {
       $self->download_metadata(
