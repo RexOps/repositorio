@@ -380,12 +380,12 @@ create consistant installations of your server.
 To configure repositor.io create a configuration file
 I</etc/rex/repositorio.conf>.
  RepositoryRoot = /srv/html/repo/
-
+   
  # log4perl configuration file
  <Log4perl>
    config = /etc/rex/io/log4perl.conf
  </Log4perl>
-
+   
  # create a mirror of the nightly rex repository
  # the files will be stored in
  # /srv/html/repo/head/rex-centos-6-x86-64/CentOS/6/rex/x86_64/
@@ -394,7 +394,7 @@ I</etc/rex/repositorio.conf>.
    local = rex-centos-6-x86-64/CentOS/6/rex/x86_64/
    type  = Yum
  </Repository>
-
+   
  # create a mirror of centos 6
  # and download the pxe boot files, too.
  <Repository centos-6-x86-64>
@@ -403,13 +403,22 @@ I</etc/rex/repositorio.conf>.
    type   = Yum
    images = true
  </Repository>
-
+   
  # create a custom repository
  <Repository centos-6-x86-64-mixed>
    local = centos-6-x86-64-mixed/mixed/6/x86_64/
    type  = Yum
  </Repository>
-
+   
+ <Repository debian-wheezy-i386-main>
+   url       = http://ftp.de.debian.org/debian/
+   local     = debian-wheezy-amd64-main/debian
+   type      = Apt
+   arch      = i386
+   dist      = wheezy
+   component = main
+ </Repository>
+ 
 An example log4perl.conf file:
 
  log4perl.rootLogger                    = DEBUG, FileAppndr1
