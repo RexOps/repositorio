@@ -1,5 +1,7 @@
 bin/repositorio
+ChangeLog
 lib/Rex/Repositorio.pm
+lib/Rex/Repositorio/Repository/Apt.pm
 lib/Rex/Repositorio/Repository/Base.pm
 lib/Rex/Repositorio/Repository/Yum.pm
 lib/Rex/Repositorio/Repository_Factory.pm
