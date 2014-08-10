@@ -1,4 +1,4 @@
-#!perl
+#!/usr/bin/env perl
 
 use FindBin;
 use lib "$FindBin::Bin/../lib";
@@ -25,6 +25,11 @@ if ( !$config_file ) {
 
 my $conf_o = Config::General->new($config_file);
 my %conf   = $conf_o->getall;
+
+if(! exists $conf{Log4perl}) {
+  print "No configuration for log4perl found. Exiting.\n";
+  exit 1;
+}
 
 Log::Log4perl::init( $conf{Log4perl}{config} );
 my $logger = Log::Log4perl->get_logger();

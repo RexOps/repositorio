@@ -186,4 +186,14 @@ sub _run_createrepo {
   system "cd $repo_dir ; createrepo .";
 }
 
+# test if all necessary parameters are available
+override verify_options => sub {
+  my $self = shift;
+  super();
+
+  if ( !exists $self->repo->{local} ) {
+    confess "No local path (local) given for: " . $self->repo->{name};
+  }
+};
+
 1;

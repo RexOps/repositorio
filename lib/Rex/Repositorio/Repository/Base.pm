@@ -300,4 +300,14 @@ sub _checksum {
   }
 }
 
+sub verify_options {
+  my ($self) = @_;
+
+  if ( !exists $self->app->config->{RepositoryRoot}
+    || !$self->app->config->{RepositoryRoot} )
+  {
+    confess "No repository root (RepositoryRoot) given in configuration file.";
+  }
+}
+
 1;

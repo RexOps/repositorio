@@ -340,4 +340,26 @@ sub _run_ftp_archive {
     "cd $repo_dir ; apt-ftparchive release -c=aptftp.conf dists/$dist >dists/$dist/Release";
 }
 
+# test if all necessary parameters are available
+override verify_options => sub {
+  my $self = shift;
+  super();
+
+  if ( !exists $self->repo->{local} ) {
+    confess "No local path (local) given for: " . $self->repo->{name};
+  }
+
+  if ( !exists $self->repo->{arch} ) {
+    confess "No architecture (arch) given for: " . $self->repo->{name};
+  }
+
+  if ( !exists $self->repo->{dist} ) {
+    confess "No distribution (dist) given for: " . $self->repo->{name};
+  }
+
+  if ( !exists $self->repo->{component} ) {
+    confess "No component (component) given for: " . $self->repo->{name};
+  }
+};
+
 1;

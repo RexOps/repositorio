@@ -180,6 +180,7 @@ sub init {
     }
   );
 
+  $repo_o->verify_options;
   $repo_o->init;
 }
 
