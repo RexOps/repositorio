@@ -116,17 +116,24 @@ sub mirror {
       (
         "images/boot.iso",           "images/efiboot.img",
         "images/efidisk.img",        "images/install.img",
-        "images/pxeboot/initrd.img", "images/pxeboot/vmlinuz"
+        "images/pxeboot/initrd.img", "images/pxeboot/vmlinuz",
+        "images/upgrade.img",
       )
       )
     {
       my $file_url   = $self->repo->{url} . "/" . $file;
       my $local_file = $self->repo->{local} . "/" . $file;
-      $self->download_package(
-        url  => $file_url,
-        name => $file,
-        dest => $local_file,
-      );
+      try {
+        $self->download_package(
+          url  => $file_url,
+          name => $file,
+          dest => $local_file,
+        );
+        1;
+      }
+      catch {
+        $self->app->logger->error("Error downloading $file_url.");
+      };
     }
   }
 }
