@@ -336,8 +336,40 @@ sub _run_ftp_archive {
 
   system
     "cd $repo_dir ; apt-ftparchive generate -c=aptftp.conf aptgenerate.conf";
+
+  if ( $? != 0 ) {
+    confess "Error running apt-ftparchive generate";
+  }
+
   system
     "cd $repo_dir ; apt-ftparchive release -c=aptftp.conf dists/$dist >dists/$dist/Release";
+
+  if ( $? != 0 ) {
+    confess "Error running apt-ftparchive release";
+  }
+
+  if ( exists $self->repo->{gpg} && $self->repo->{gpg}->{key} ) {
+    my $key  = $self->repo->{gpg}->{key};
+    my $pass = $self->repo->{gpg}->{password};
+    if ( !$pass ) {
+      $pass = $self->read_password("GPG key passphrase: ");
+    }
+
+    unlink "$repo_dir/dists/$dist/Release.gpg";
+
+    my $cmd =
+        "cd $repo_dir ; gpg -u $key "
+      . "--batch --passphrase '"
+      . $pass
+      . "' -bao dists/$dist/Release.gpg dists/$dist/Release";
+
+    system $cmd;
+
+    if ( $? != 0 ) {
+      $cmd =~ s/\Q$pass\E/\*\*\*\*\*\*\*/;
+      confess "Error running gpg sign: $cmd";
+    }
+  }
 }
 
 # test if all necessary parameters are available

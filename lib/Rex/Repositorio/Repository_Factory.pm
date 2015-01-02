@@ -32,7 +32,7 @@ sub create {
     confess "Error loading repository type: $type. ($EVAL_ERROR)";
   }
 
-  return $repo_mod->new( %{$option{options}} );
+  return $repo_mod->new( %{ $option{options} } );
 }
 
 1;

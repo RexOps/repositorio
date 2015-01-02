@@ -22,6 +22,7 @@ use File::Spec;
 use File::Copy;
 use Digest::SHA;
 use Digest::MD5;
+use Term::ReadKey;
 
 has app  => ( is => 'ro' );
 has repo => ( is => 'ro' );
@@ -308,6 +309,19 @@ sub verify_options {
   {
     confess "No repository root (RepositoryRoot) given in configuration file.";
   }
+}
+
+sub read_password {
+  my ( $self, $msg ) = @_;
+  $msg ||= "Password: ";
+
+  print $msg;
+  ReadMode "noecho";
+  my $password = <STDIN>;
+  chomp $password;
+  ReadMode 0;
+  print "\n";
+  return $password;
 }
 
 1;
