@@ -43,7 +43,7 @@ my %cli;
 GetOptions(
   \%cli,        "mirror",          "tag=s",        "repo=s",
   "help",       "update-metadata", "update-files", "list",
-  "add-file=s", "remove-file=s",   "init"
+  "add-file=s", "remove-file=s",   "init", "server",
 );
 
 my $app = Rex::Repositorio->new( config => \%conf, logger => $logger );
@@ -99,6 +99,8 @@ create consistant installations of your server.
 =item --remove-file=file  remove a file from a repository (needs --repo)
 
 =item --list              list known repositories
+
+=item --server            start a server for file delivery. (not available for all repository types)
 
 =item --help              display this help message
 

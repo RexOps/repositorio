@@ -2,9 +2,13 @@
 
 repositorio is a tool to mirror and administrate linux repositories and to tag them.
 
+This is the master branch of the development repository. In this branch you'll find all the new stuff that is work-in-progress.
+
 ### Supported Repositories
 
-Currently repositorio is in early development stage. Right now only *yum* repositories are supported.
+Right now *yum* and *apt* repositories are supported.
+
+Currently we're working on *docker* support, so that it is possible to build a private docker registry with repositorio. See *docker* chapter for more information.
 
 
 ### Configuration
@@ -101,3 +105,56 @@ A tag is just a hardlinked copy of the *head* tag.
 ```
 repositorio --tag=production --repo=rex-centos-6-x86-64
 ```
+
+
+### Docker
+
+If you also want to manage your private docker registry with repositorio you can do this as well. Currently this feature is in an early development stage. We welcome any feedback and patched.
+
+Current development stage:
+
+* upload images (docker push) - done
+* download images (docker pull) - done
+* authentication - open
+* user management - open
+* permissions to repositories - open
+* search for images - open
+
+#### Configuration
+
+To create a docker repository you need the following snippet inside your repositorio.conf file.
+
+```
+<Repository docker>
+  local = docker-images
+  type  = Docker
+</Repository>
+```
+
+And then you can initialize this repository as usual with:
+
+```
+repositorio --repo=docker --init
+```
+
+This will create a new folder *docker-images* inside your *RepositoryRoot*/head directory.
+
+For the docker images it is not possible to use apache (or another webserver) to serve the content, so you need to start a small server that is included with repositorio.
+
+```
+repositorio --repo=docker --server prefork
+```
+
+This will start a preforking webserver. The server part is done with Mojolicious. Mojolicious is an easy to use Perl Webframework.
+
+Now you can use *repositorio* as a docker registry.
+
+```
+docker pull ubuntu
+docker tag localhost:3000/ubuntu
+docker push localhost:3000/ubuntu
+```
+
+
+
+

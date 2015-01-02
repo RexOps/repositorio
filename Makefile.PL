@@ -1,20 +1,23 @@
 use ExtUtils::MakeMaker;
 
 my %deps = (
-  'Config::General'  => 0,
-  'Log::Log4perl'    => 0,
-  'XML::LibXML'      => 0,
-  'Compress::Zlib'   => 0,
-  'common::sense'    => 0,
-  'Moose'            => 0,
-  'LWP::UserAgent'   => 0,
-  'Try::Tiny'        => 0,
-  'XML::Simple'      => 0,
-  'Params::Validate' => 0,
-  'IO::All'          => 0,
-  'File::Path'       => 0,
-  'File::Basename'   => 0,
-  'Term::ReadKey'    => 0,
+  'Config::General'                 => 0,
+  'Log::Log4perl'                   => 0,
+  'XML::LibXML'                     => 0,
+  'Compress::Zlib'                  => 0,
+  'common::sense'                   => 0,
+  'Moose'                           => 0,
+  'LWP::UserAgent'                  => 0,
+  'Try::Tiny'                       => 0,
+  'XML::Simple'                     => 0,
+  'Params::Validate'                => 0,
+  'IO::All'                         => 0,
+  'File::Path'                      => 0,
+  'File::Basename'                  => 0,
+  'Term::ReadKey'                   => 0,
+  'JSON::XS'                        => 0,
+  'Mojolicious'                     => 0,
+  'Mojolicious::Plugin::RenderFile' => 0,
 );
 
 WriteMakefile1(

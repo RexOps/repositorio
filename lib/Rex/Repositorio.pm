@@ -20,6 +20,7 @@ use File::Basename qw'dirname';
 use File::Spec;
 use File::Copy;
 use Rex::Repositorio::Repository_Factory;
+use JSON::XS;
 
 our $VERSION = "0.2.0";
 
@@ -61,6 +62,10 @@ sub parse_cli_option {
     $self->tag( tag => $option{tag}, repo => $option{repo} );
   }
 
+  elsif ( exists $option{server} && exists $option{repo} ) {
+    $self->server( repo => $option{repo} );
+  }
+
   elsif ( exists $option{list} ) {
     $self->list();
   }
@@ -81,6 +86,28 @@ sub parse_cli_option {
     $self->_help();
     exit 0;
   }
+}
+
+sub server {
+  my $self   = shift;
+  my %option = validate(
+    @_,
+    {
+      repo => {
+        type => SCALAR
+      },
+    }
+  );
+
+  require Mojolicious::Commands;
+
+  # pass config to mojo app
+  $ENV{'REPO_CONFIG'}           = encode_json( $self->config );
+  $ENV{'REPO_NAME'}             = $option{repo};
+  $ENV{'MOJO_MAX_MESSAGE_SIZE'} = 1024 * 1024 * 1024 * 1024
+    ;    # set max_message_size astronomically high / TODO: make it configurable
+  my $server_type = $self->config->{Repository}->{ $option{repo} }->{type};
+  Mojolicious::Commands->start_app("Rex::Repositorio::Server::$server_type");
 }
 
 sub add_file {
@@ -313,6 +340,7 @@ sub _help {
     "--add-file=file     add a file to a repository (needs --repo)",
     "--remove-file=file  remove a file from a repository (needs --repo)",
     "--list              list known repositories",
+    "--server            start a server for file delivery. (not available for all repository types)",
     "--help              display this help message",
   );
 
@@ -370,6 +398,8 @@ create consistant installations of your server.
 =item --remove-file=file  remove a file from a repository (needs --repo)
 
 =item --list              list known repositories
+
+=item --server            start a server for file delivery. (not available for all repository types)
 
 =item --help              display this help message
 
