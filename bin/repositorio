@@ -140,6 +140,7 @@ I</etc/rex/repositorio.conf>.
  </Repository>
 
 If you want to sign your custom repositories you have to configure the gpg key to use.
+repositorio automatically exports the public key into the root of the repository, so it can be imported from the clients.
 
 An example for YUM repositories:
 
