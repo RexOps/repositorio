@@ -419,6 +419,33 @@ I</etc/rex/repositorio.conf>.
    component = main
  </Repository>
  
+If you want to sign your custom repositories you have to configure the gpg key to use.
+
+An example for YUM repositories:
+
+ <Repository centos-6-x86-64-mixed>
+   local = centos-6-x86-64-mixed/mixed/6/x86_64/
+   type  = Yum
+   <gpg>
+     key      = DA95F273
+     password = test
+   </gpg>
+ </Repository>
+
+An example for APT repositories:
+
+ <Repository debian-7-x86-64-mixed>
+   local     = debian-7-x86-64-mixed/debian
+   type      = Apt
+   arch      = amd64
+   dist      = wheezy
+   component = mixed
+   <gpg>
+     key      = DA95F273
+     password = test
+   </gpg>
+ </Repository>
+
 An example log4perl.conf file:
 
  log4perl.rootLogger                    = DEBUG, FileAppndr1
