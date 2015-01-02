@@ -369,6 +369,15 @@ sub _run_ftp_archive {
       $cmd =~ s/\Q$pass\E/\*\*\*\*\*\*\*/;
       confess "Error running gpg sign: $cmd";
     }
+
+    # export pub key as asc file
+    my $pub_file = $self->repo->{name} . ".asc";
+    $cmd = "cd $repo_dir ; gpg -a --output $pub_file --export $key";
+    system $cmd;
+
+    if ( $? != 0 ) {
+      confess "Error running gpg export: $cmd";
+    }
   }
 }
 
