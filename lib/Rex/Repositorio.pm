@@ -21,7 +21,7 @@ use File::Spec;
 use File::Copy;
 use Rex::Repositorio::Repository_Factory;
 
-our $VERSION = "0.1.1";
+our $VERSION = "0.2.0";
 
 has config => ( is => 'ro' );
 has logger => ( is => 'ro' );

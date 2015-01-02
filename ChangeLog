@@ -1,2 +1,6 @@
+2015-01-02 Jan Gehring <jan.gehring, gmail.com> (0.2.0)
+  * added possibility to sign repositories (apt and yum)
+  * fixed centos mirror bug (CentOS 7 - efidisk.img not existing) - #4
+
 2014-03-18 Jan Gehring <jan.gehring, gmail.com> (0.1.0)
   * added apt repository management

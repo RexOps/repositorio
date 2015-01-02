@@ -14,6 +14,7 @@ my %deps = (
   'IO::All'          => 0,
   'File::Path'       => 0,
   'File::Basename'   => 0,
+  'Term::ReadKey'    => 0,
 );
 
 WriteMakefile1(
