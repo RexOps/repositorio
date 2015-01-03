@@ -109,7 +109,7 @@ repositorio --tag=production --repo=rex-centos-6-x86-64
 
 ### Docker
 
-If you also want to manage your private docker registry with repositorio you can do this as well. Currently this feature is in an early development stage. We welcome any feedback and patched.
+If you also want to manage your private docker registry with repositorio you can do this as well. Currently this feature is in an early development stage. We welcome any feedback and patches.
 
 Current development stage:
 
