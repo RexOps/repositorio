@@ -31,6 +31,7 @@ sub startup {
   my $r = $self->routes;
   $r->get('/')->to('file#index');
   $r->get('/:tag')->to('file#index');
+  $r->get('/:tag/:repo/errata')->to('errata#query');
   $r->get('/*')->to('file#serve');
 
   # Switch to installable home directory
