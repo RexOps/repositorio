@@ -4,6 +4,10 @@ repositorio is a tool to mirror and administrate linux repositories and to tag t
 
 This is the master branch of the development repository. In this branch you'll find all the new stuff that is work-in-progress.
 
+### Need help?
+
+If you need help, feel free to join us on irc.freenode.net on channel #rex (this is the channel for all RexOps projects) or just post an issue in the tracker.
+
 ### Supported Repositories
 
 Right now *yum* and *apt* repositories are supported.
