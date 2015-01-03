@@ -153,6 +153,15 @@ This will start a preforking webserver. The server part is done with Mojolicious
 
 Now you can use *repositorio* as a docker registry.
 
+First you need to create a user:
+
+```
+docker login -e some@mail.tld -p 'some-save-password' -u 'some-user' http://localhost:3000/v1/
+```
+
+The user is enabled immediately.
+Then you can push and pull images.
+
 ```
 docker pull ubuntu
 docker tag localhost:3000/ubuntu
