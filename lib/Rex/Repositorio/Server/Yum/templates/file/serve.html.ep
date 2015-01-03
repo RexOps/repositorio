@@ -1,0 +1,11 @@
+% use File::Spec;
+% layout 'index';
+<pre>
+<a href="../">../</a>
+
+% for my $entry (@{ $entries }) {
+<a href="<%= File::Spec->catfile($path, $entry->{name}) %>"><%= $entry->{name} %></a>
+% }
+
+
+</pre>

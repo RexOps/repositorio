@@ -1,0 +1,8 @@
+<html>
+<head><title>Index of <%= $path %></title></head>
+  <body>
+    <h1>Index of <%= $path %></h1><hr>
+    <%= content %>
+    <hr>
+  </body>
+</html>

@@ -107,6 +107,9 @@ sub server {
   $ENV{'MOJO_MAX_MESSAGE_SIZE'} = 1024 * 1024 * 1024 * 1024
     ;    # set max_message_size astronomically high / TODO: make it configurable
   my $server_type = $self->config->{Repository}->{ $option{repo} }->{type};
+  if($server_type eq "Apt") {
+    $server_type = "Yum";
+  }
   Mojolicious::Commands->start_app("Rex::Repositorio::Server::$server_type");
 }
 

@@ -1,0 +1,9 @@
+% layout 'index';
+<pre>
+<a href="../">../</a>
+
+% for my $tag (@{ $tags }) {
+<a href="/<%= $tag %>/<%= $repo_name %>"><%= $tag %>/<%= $repo_name %></a>
+% }
+
+</pre>

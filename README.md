@@ -110,6 +110,15 @@ A tag is just a hardlinked copy of the *head* tag.
 repositorio --tag=production --repo=rex-centos-6-x86-64
 ```
 
+### Serving a directory
+
+To serve a directory we advice you to use Apache or nginx. You can just point the document root to *RepositoryRoot* in your repositorio.conf file.
+
+If you don't want to install a webserver, you can also use the build-in webserver to server repositories.
+
+```
+repositorio --repo=repo-name --server prefork
+```
 
 ### Docker
 

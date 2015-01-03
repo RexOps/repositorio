@@ -7,54 +7,17 @@
 package Rex::Repositorio::Server::Docker;
 
 use Mojo::Base 'Mojolicious';
-use Data::Dumper;
-use JSON::XS;
-use File::Spec;
-use Params::Validate qw(:all);
 
 # This method will run once at server start
 sub startup {
   my $self = shift;
 
-  $self->helper(
-    config => sub {
-      my $config = decode_json( $ENV{REPO_CONFIG} );
-      return $config;
-    },
-  );
+  $self->plugin("Rex::Repositorio::Server::Helper::Common");
 
   $self->app->log(
     Mojo::Log->new(
       level => 'debug',
     )
-  );
-
-  $self->helper(
-    repo => sub {
-      my $self = shift;
-      return {
-        %{ $self->config->{Repository}->{ $ENV{REPO_NAME} } },
-        name => $ENV{REPO_NAME}
-      };
-    },
-  );
-
-  $self->helper(
-    get_repo_dir => sub {
-      my $self   = shift;
-      my %option = validate(
-        @_,
-        {
-          repo => {
-            type => SCALAR
-          }
-        }
-      );
-
-      return File::Spec->rel2abs( $self->config->{RepositoryRoot}
-          . "/head/"
-          . $self->config->{Repository}->{ $option{repo} }->{local} );
-    },
   );
 
   $self->plugin("RenderFile");
