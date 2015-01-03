@@ -122,7 +122,7 @@ Current development stage:
 * authentication (docker login) - done
 * user management - open
 * permissions to repositories - open
-* search for images - open
+* search for images (docker search) - done
 
 #### Configuration
 
