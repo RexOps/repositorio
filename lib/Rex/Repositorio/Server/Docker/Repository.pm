@@ -49,12 +49,12 @@ sub put_repo {
     File::Spec->catdir( $self->app->get_repo_dir( repo => $self->repo->{name} ),
     "images", $store->[-1]->{id} );
 
-  mkpath $image_dir;
-  my $ancestor_file = File::Spec->catfile( $image_dir, "ancestors" );
-
-  open( my $afh, ">", $ancestor_file ) or die($!);
-  print $afh encode_json( [ map { $_ = $_->{id} } reverse @{$store} ] );
-  close($afh);
+#  mkpath $image_dir;
+#  my $ancestor_file = File::Spec->catfile( $image_dir, "ancestors" );
+#
+#  open( my $afh, ">", $ancestor_file ) or die($!);
+#  print $afh encode_json( [ map { $_ = $_->{id} } reverse @{$store} ] );
+#  close($afh);
 
   #$self->render( json => {}, status => 500 );
   #$self->render( json => {} );

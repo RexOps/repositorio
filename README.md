@@ -119,7 +119,7 @@ Current development stage:
 
 * upload images (docker push) - done
 * download images (docker pull) - done
-* authentication - open
+* authentication (docker login) - done
 * user management - open
 * permissions to repositories - open
 * search for images - open

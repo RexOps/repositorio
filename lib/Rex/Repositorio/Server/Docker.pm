@@ -16,13 +16,17 @@ use Params::Validate qw(:all);
 sub startup {
   my $self = shift;
 
-  $self->plugin("RenderFile");
-
   $self->helper(
     config => sub {
       my $config = decode_json( $ENV{REPO_CONFIG} );
       return $config;
     },
+  );
+
+  $self->app->log(
+    Mojo::Log->new(
+      level => 'debug',
+    )
   );
 
   $self->helper(
@@ -53,10 +57,14 @@ sub startup {
     },
   );
 
+  $self->plugin("RenderFile");
+  $self->plugin("Rex::Repositorio::Server::Docker::Mojolicious::Plugin::DockerSession");
+
   my $r = $self->routes;
   $r->get('/')->to('index#index');
   $r->get('/v1/_ping')->to('index#ping');
   $r->get('/v1/search')->to('search#search');
+  $r->post('/v1/users')->to('auth#post_user');
 
   my $auth_repo_lib = $r->bridge('/v1/repositories/:name')->to('auth#login', repo_namespace => 'library');
   $auth_repo_lib->get('/images')->to('repository#get_repo_images');

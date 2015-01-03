@@ -10,6 +10,7 @@ use Mojo::Base 'Mojolicious::Controller';
 use Data::Dumper;
 use File::Spec;
 use File::Path;
+use File::Basename 'basename';
 require IO::All;
 use JSON::XS;
 
@@ -26,6 +27,17 @@ sub put_image {
   open( my $fh, ">", $image_json ) or die($!);
   print $fh $self->req->body;
   close($fh);
+
+  eval {
+    my $ref = decode_json $self->req->body;
+    if ( exists $ref->{parent} ) {
+      symlink File::Spec->catfile( $repo_dir, "images", $ref->{parent} ),
+        File::Spec->catfile( $image_dir, 'parent' );
+    }
+    1;
+  } or do {
+    print STDERR ">> ERR> $@\n";
+  };
 
   $self->render( text => "true" );
 }
@@ -76,10 +88,16 @@ sub get_image_ancestry {
   my $repo_dir = $self->app->get_repo_dir( repo => $self->repo->{name} );
   my $image_dir =
     File::Spec->catdir( $repo_dir, "images", $self->param("name") );
-  my $ancestor_file = File::Spec->catfile( $image_dir, "ancestors" );
 
-  $self->res->headers->add( 'Content-Type', 'application/json' );
-  $self->render( text => IO::All->new($ancestor_file)->slurp );
+  my @ids = ( $self->param("name") );
+  my $parent = readlink File::Spec->catfile( $image_dir, "parent" );
+  while ($parent) {
+    my $parent_id = basename $parent;
+    push @ids, $parent_id;
+    $parent = readlink File::Spec->catfile( $image_dir, "..", $parent_id, "parent" );
+  }
+
+  $self->render( json => \@ids );
 }
 
 sub get_image_layer {
