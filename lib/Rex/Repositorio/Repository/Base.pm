@@ -383,4 +383,32 @@ sub get_errata {
   return $ret;
 }
 
+sub update_errata {
+  my $self = shift;
+
+  my $errata_type = $self->repo->{errata};
+  $self->app->logger->debug("Updating errata of type: $errata_type");
+
+  my $data = $self->download("http://errata.repositor.io/$errata_type.tar.gz");
+  open(my $fh, ">", "/tmp/$errata_type.tar.gz") or confess($!);
+  binmode $fh;
+  print $fh $data;
+  close($fh);
+
+  my $errata_dir =
+    $self->app->get_errata_dir( repo => $self->repo->{name}, tag => "head" );
+
+  mkpath $errata_dir;
+
+  system "cd $errata_dir ; tar xzf /tmp/$errata_type.tar.gz";
+
+  if($? != 0) {
+    confess "Error extracting errata database.";
+  }
+
+  unlink "/tmp/$errata_type.tar.gz";
+
+  $self->app->logger->debug("Updating errata of type: $errata_type (done)");
+}
+
 1;

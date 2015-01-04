@@ -63,6 +63,10 @@ sub parse_cli_option {
     $self->tag( tag => $option{tag}, repo => $option{repo} );
   }
 
+  elsif ( exists $option{repo} && exists $option{"update-errata"} ) {
+    $self->update_errata( repo => $option{repo} );
+  }
+
   elsif ( exists $option{errata}
     && exists $option{package}
     && exists $option{arch}
@@ -193,6 +197,33 @@ sub list {
   my @repos = keys %{ $self->config->{Repository} };
 
   $self->_print(@repos);
+}
+
+sub update_errata {
+  my $self = shift;
+  my %option = validate(
+    @_,
+    {
+      repo => {
+        type => SCALAR
+      },
+    }
+  ); 
+
+  my $repo   = $self->config->{Repository}->{ $option{repo} };
+  my $type   = $repo->{type};
+  my $repo_o = Rex::Repositorio::Repository_Factory->create(
+    type    => $type,
+    options => {
+      app  => $self,
+      repo => {
+        name => $option{repo},
+        %{$repo},
+      }
+    }
+  );
+
+  $repo_o->update_errata();
 }
 
 sub print_errata {
@@ -427,6 +458,11 @@ sub _help {
     "--remove-file=file  remove a file from a repository (needs --repo)",
     "--list              list known repositories",
     "--server            start a server for file delivery. (not available for all repository types)",
+    "--update-errata     updates the errata database for a repo (needs --repo)",
+    "--errata            query errata for a package (needs --repo, --package, --version, --arch)",
+    "  --package=pkg     for which package the errata should be queries",
+    "  --version=ver     for which version of a package the errata should be queries",
+    "  --arch=arch       for which architecture of a package the errata should be queries",
     "--help              display this help message",
   );
 
@@ -486,6 +522,16 @@ create consistant installations of your server.
 =item --list              list known repositories
 
 =item --server            start a server for file delivery. (not available for all repository types)
+
+=item --update-errata     updates the errata database for a repo (needs --repo)",
+
+=item --errata            query errata for a package (needs --repo, --package, --version, --arch)",
+
+=item --package=pkg       for which package the errata should be queries",
+
+=item --version=ver       for which version of a package the errata should be queries",
+
+=item --arch=arch         for which architecture of a package the errata should be queries",
 
 =item --help              display this help message
 

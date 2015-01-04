@@ -26,7 +26,7 @@ if ( !$config_file ) {
 my $conf_o = Config::General->new($config_file);
 my %conf   = $conf_o->getall;
 
-if(! exists $conf{Log4perl}) {
+if ( !exists $conf{Log4perl} ) {
   print "No configuration for log4perl found. Exiting.\n";
   exit 1;
 }
@@ -43,8 +43,9 @@ my %cli;
 GetOptions(
   \%cli,        "mirror",          "tag=s",        "repo=s",
   "help",       "update-metadata", "update-files", "list",
-  "add-file=s", "remove-file=s",   "init", "server",
-  "errata", "package=s", "version=s", "arch=s",
+  "add-file=s", "remove-file=s",   "init",         "server",
+  "errata",     "update-errata",   "package=s",    "version=s",
+  "arch=s",
 );
 
 my $app = Rex::Repositorio->new( config => \%conf, logger => $logger );
@@ -102,6 +103,16 @@ create consistant installations of your server.
 =item --list              list known repositories
 
 =item --server            start a server for file delivery. (not available for all repository types)
+
+=item --update-errata     updates the errata database for a repo (needs --repo)",
+
+=item --errata            query errata for a package (needs --repo, --package, --version, --arch)",
+
+=item --package=pkg       for which package the errata should be queries",
+
+=item --version=ver       for which version of a package the errata should be queries",
+
+=item --arch=arch         for which architecture of a package the errata should be queries",
 
 =item --help              display this help message
 
