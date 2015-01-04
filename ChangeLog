@@ -1,6 +1,7 @@
 2015-01-04 Jan Gehring <jan.gehring, gmail.com> (0.3.0)
   * added initial docker support (login, push, pull, search)
   * added file server for apt and yum
+  * added errata database support
 
 2015-01-02 Jan Gehring <jan.gehring, gmail.com> (0.2.0)
   * added possibility to sign repositories (apt and yum)

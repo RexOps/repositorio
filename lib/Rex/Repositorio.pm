@@ -23,7 +23,7 @@ use Rex::Repositorio::Repository_Factory;
 use JSON::XS;
 use Data::Dumper;
 
-our $VERSION = "0.2.0";
+our $VERSION = "0.3.0";
 
 has config => ( is => 'ro' );
 has logger => ( is => 'ro' );
@@ -491,11 +491,11 @@ create consistant installations of your server.
 
 =item * Web Site: L<http://repositor.io/>
 
-=item * IRC: irc.freenode.net #repositorio
+=item * IRC: irc.freenode.net #rex (RexOps IRC Channel)
 
-=item * Bug Tracker: L<https://github.com/krimdomu/repositorio/issues>
+=item * Bug Tracker: L<https://github.com/RexOps/repositorio/issues>
 
-=item * Twitter: L<http://twitter.com/jfried83>
+=item * Twitter: L<http://twitter.com/RexOps>
 
 =back
 
