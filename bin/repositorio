@@ -44,6 +44,7 @@ GetOptions(
   \%cli,        "mirror",          "tag=s",        "repo=s",
   "help",       "update-metadata", "update-files", "list",
   "add-file=s", "remove-file=s",   "init", "server",
+  "errata", "package=s", "version=s", "arch=s",
 );
 
 my $app = Rex::Repositorio->new( config => \%conf, logger => $logger );

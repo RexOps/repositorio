@@ -14,6 +14,8 @@ use Carp;
 use Params::Validate qw(:all);
 use File::Spec;
 use File::Path;
+use IO::All;
+use JSON::XS;
 
 extends "Rex::Repositorio::Repository::Base";
 
@@ -228,6 +230,7 @@ sub _run_createrepo {
     }
   }
 }
+
 
 # test if all necessary parameters are available
 override verify_options => sub {

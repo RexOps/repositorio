@@ -10,7 +10,7 @@ If you need help, feel free to join us on irc.freenode.net on channel #rex (this
 
 ### Supported Repositories
 
-Right now *yum* and *apt* repositories are supported.
+Right now *yum* and *apt* repositories are supported. It is also possible to query errata for packages if an errata database is present. See *errata* chapter for more information.
 
 Currently we're working on *docker* support, so that it is possible to build a private docker registry with repositorio. See *docker* chapter for more information.
 
@@ -108,6 +108,36 @@ A tag is just a hardlinked copy of the *head* tag.
 
 ```
 repositorio --tag=production --repo=rex-centos-6-x86-64
+```
+
+### Errata
+
+It is also possible to query repositorio for the errata of a package. You can do this via command line and via a webservice. If you want to query errata you also need the errata database. Currently we provide CentOS (5, 6 and 7) and EPEL errata databases.
+
+If you want to contribute scripts to generate errata databases for other distributions, feel free to send us a pull request or join us on irc (irc.freenode.net / #rex).
+
+To configure a repository to serve also the errata, you need to configure the errata type for the repository.
+
+```
+<Repository centos-6-x86-64>
+  url    = http://ftp.hosteurope.de/mirror/centos.org/6/os/x86_64/
+  local  = centos-6-x86-64/CentOS/6/rex/x86_64/
+  type   = Yum
+  errata = CentOS-6
+</Repository>
+```
+
+To query the errata database you can run the following command:
+
+```
+repositorio --repo=some-repo --errata --package=openssl --arch=x86_64 --version=1.0.0-20.el6_2.3
+```
+
+If you want to query the webinterface, this will return a json structure containing all available updates:
+
+```
+curl -XGET \
+  http://your-server:3000/head/centos-6-x86-64/errata?package=openssl&arch=x86_64&version=1.0.0-20.el6_2.3
 ```
 
 ### Serving a directory

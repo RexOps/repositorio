@@ -21,6 +21,7 @@ use File::Spec;
 use File::Copy;
 use Rex::Repositorio::Repository_Factory;
 use JSON::XS;
+use Data::Dumper;
 
 our $VERSION = "0.2.0";
 
@@ -60,6 +61,20 @@ sub parse_cli_option {
 
   elsif ( exists $option{tag} && exists $option{repo} ) {
     $self->tag( tag => $option{tag}, repo => $option{repo} );
+  }
+
+  elsif ( exists $option{errata}
+    && exists $option{package}
+    && exists $option{arch}
+    && exists $option{repo}
+    && exists $option{version} )
+  {
+    $self->print_errata(
+      package => $option{package},
+      arch    => $option{arch},
+      version => $option{version},
+      repo    => $option{repo},
+    );
   }
 
   elsif ( exists $option{server} && exists $option{repo} ) {
@@ -107,7 +122,7 @@ sub server {
   $ENV{'MOJO_MAX_MESSAGE_SIZE'} = 1024 * 1024 * 1024 * 1024
     ;    # set max_message_size astronomically high / TODO: make it configurable
   my $server_type = $self->config->{Repository}->{ $option{repo} }->{type};
-  if($server_type eq "Apt") {
+  if ( $server_type eq "Apt" ) {
     $server_type = "Yum";
   }
   Mojolicious::Commands->start_app("Rex::Repositorio::Server::$server_type");
@@ -178,6 +193,55 @@ sub list {
   my @repos = keys %{ $self->config->{Repository} };
 
   $self->_print(@repos);
+}
+
+sub print_errata {
+  my $self   = shift;
+  my %option = validate(
+    @_,
+    {
+      repo => {
+        type => SCALAR
+      },
+      package => {
+        type => SCALAR
+      },
+      version => {
+        type => SCALAR
+      },
+      arch => {
+        type => SCALAR
+      },
+    }
+  );
+
+  my $repo   = $self->config->{Repository}->{ $option{repo} };
+  my $type   = $repo->{type};
+  my $repo_o = Rex::Repositorio::Repository_Factory->create(
+    type    => $type,
+    options => {
+      app  => $self,
+      repo => {
+        name => $option{repo},
+        %{$repo},
+      }
+    }
+  );
+
+  my $errata = $repo_o->get_errata(
+    arch    => $option{arch},
+    package => $option{package},
+    version => $option{version}
+  );
+
+  for my $pkg_version ( sort { $a cmp $b } keys %{$errata} ) {
+    print "Name       : $errata->{$pkg_version}->[0]->{advisory_name}\n";
+    print "Version    : $pkg_version\n";
+    print "Synopsis   : $errata->{$pkg_version}->[0]->{synopsis}\n";
+    print "References : $errata->{$pkg_version}->[0]->{references}\n";
+    print "Type       : $errata->{$pkg_version}->[0]->{type}\n";
+    print "\n";
+  }
 }
 
 sub init {
@@ -302,6 +366,25 @@ sub tag {
     }
     closedir $dh;
   }
+}
+
+sub get_errata_dir {
+  my $self   = shift;
+  my %option = validate(
+    @_,
+    {
+      repo => {
+        type => SCALAR
+      },
+      tag => {
+        type => SCALAR
+      }
+    }
+  );
+
+  return File::Spec->catdir(
+    File::Spec->rel2abs( $self->config->{RepositoryRoot} ),
+    $option{tag}, $option{repo}, "errata" );
 }
 
 sub get_repo_dir {

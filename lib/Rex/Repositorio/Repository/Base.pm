@@ -23,6 +23,8 @@ use File::Copy;
 use Digest::SHA;
 use Digest::MD5;
 use Term::ReadKey;
+use JSON::XS;
+use List::MoreUtils 'firstidx';
 
 has app  => ( is => 'ro' );
 has repo => ( is => 'ro' );
@@ -322,6 +324,53 @@ sub read_password {
   ReadMode 0;
   print "\n";
   return $password;
+}
+
+sub get_errata {
+  my $self = shift;
+  my %option = validate(
+    @_,
+    {
+      package => {
+        type => SCALAR
+      },
+      version => {
+        type => SCALAR
+      },
+      arch => {
+        type => SCALAR
+      },
+    }
+  );
+
+  my $errata_dir = $self->app->get_errata_dir( repo => $self->repo->{name}, tag => "head" );
+
+  my $ref = decode_json(IO::All->new(File::Spec->catfile($errata_dir, "errata.json"))->slurp);
+
+  my $package = $option{package};
+  my $arch    = $option{arch};
+  my $version = $option{version};
+
+  my $pkg = $ref->{$arch}->{$package};
+  my @versions = keys %{ $pkg };
+
+  @versions = sort { $a cmp $b } @versions;
+
+  my $idx = firstidx { ($_ cmp $version) == 1 } @versions;
+  if($idx == -1) {
+    # no updates found
+    return $self->render(json => {});
+  }
+
+  $idx = 0 if($idx <= 0);
+
+  my @update_versions = @versions[$idx..$#versions];
+  my $ret;
+  for my $uv (@update_versions) {
+    $ret->{$uv} = $pkg->{$uv};
+  }
+
+  return $ret;
 }
 
 1;
