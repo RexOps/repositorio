@@ -140,6 +140,21 @@ curl -XGET \
   http://your-server:3000/head/centos-6-x86-64/errata?package=openssl&arch=x86_64&version=1.0.0-20.el6_2.3
 ```
 
+To update the errata database you can use the following command:
+
+```
+repositorio --repo=centos-6-x86-64 --update-errata
+```
+
+The following errata types are available:
+
+* CentOS-5
+* CentOS-6
+* CentOS-7
+* epel-5
+* epel-6
+* epel-7
+
 ### Serving a directory
 
 To serve a directory we advice you to use Apache or nginx. You can just point the document root to *RepositoryRoot* in your repositorio.conf file.
