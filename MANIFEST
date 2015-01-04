@@ -3,8 +3,26 @@ ChangeLog
 lib/Rex/Repositorio.pm
 lib/Rex/Repositorio/Repository/Apt.pm
 lib/Rex/Repositorio/Repository/Base.pm
+lib/Rex/Repositorio/Repository/Docker.pm
 lib/Rex/Repositorio/Repository/Yum.pm
 lib/Rex/Repositorio/Repository_Factory.pm
+lib/Rex/Repositorio/Server/Docker.pm
+lib/Rex/Repositorio/Server/Docker/Auth.pm
+lib/Rex/Repositorio/Server/Docker/Helper/Auth.pm
+lib/Rex/Repositorio/Server/Docker/Helper/Auth/Plain.pm
+lib/Rex/Repositorio/Server/Docker/Image.pm
+lib/Rex/Repositorio/Server/Docker/Index.pm
+lib/Rex/Repositorio/Server/Docker/Mojolicious/Plugin/DockerSession.pm
+lib/Rex/Repositorio/Server/Docker/Repository.pm
+lib/Rex/Repositorio/Server/Docker/Search.pm
+lib/Rex/Repositorio/Server/Helper/Common.pm
+lib/Rex/Repositorio/Server/Helper/RenderFile.pm
+lib/Rex/Repositorio/Server/Yum.pm
+lib/Rex/Repositorio/Server/Yum/Errata.pm
+lib/Rex/Repositorio/Server/Yum/File.pm
+lib/Rex/Repositorio/Server/Yum/templates/file/index.html.ep
+lib/Rex/Repositorio/Server/Yum/templates/file/serve.html.ep
+lib/Rex/Repositorio/Server/Yum/templates/layouts/index.html.ep
 Makefile.PL
 MANIFEST			This list of files
 t/base.t
