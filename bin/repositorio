@@ -11,6 +11,8 @@ use Log::Log4perl;
 use Data::Dumper;
 use Getopt::Long;
 
+use lib '/usr/lib/rex/perl/share/perl5/vendor_perl';
+
 my @config_file_locations = (
   "/etc/rex/repositorio.conf", "/usr/local/etc/rex/repositorio.conf",
   "./repositorio.conf"
