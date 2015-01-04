@@ -327,7 +327,7 @@ sub read_password {
 }
 
 sub get_errata {
-  my $self = shift;
+  my $self   = shift;
   my %option = validate(
     @_,
     {
@@ -343,28 +343,38 @@ sub get_errata {
     }
   );
 
-  my $errata_dir = $self->app->get_errata_dir( repo => $self->repo->{name}, tag => "head" );
+  my $errata_dir =
+    $self->app->get_errata_dir( repo => $self->repo->{name}, tag => "head" );
 
-  my $ref = decode_json(IO::All->new(File::Spec->catfile($errata_dir, "errata.json"))->slurp);
+  my $ref = decode_json(
+    IO::All->new(
+      File::Spec->catfile(
+        $errata_dir, $option{arch},
+        substr( $option{package}, 0, 1 ), $option{package},
+        "errata.json"
+      )
+    )->slurp
+  );
 
   my $package = $option{package};
   my $arch    = $option{arch};
   my $version = $option{version};
 
-  my $pkg = $ref->{$arch}->{$package};
-  my @versions = keys %{ $pkg };
+  my $pkg      = $ref;
+  my @versions = keys %{$pkg};
 
   @versions = sort { $a cmp $b } @versions;
 
-  my $idx = firstidx { ($_ cmp $version) == 1 } @versions;
-  if($idx == -1) {
+  my $idx = firstidx { ( $_ cmp $version ) == 1 } @versions;
+  if ( $idx == -1 ) {
+
     # no updates found
-    return $self->render(json => {});
+    return $self->render( json => {} );
   }
 
-  $idx = 0 if($idx <= 0);
+  $idx = 0 if ( $idx <= 0 );
 
-  my @update_versions = @versions[$idx..$#versions];
+  my @update_versions = @versions[ $idx .. $#versions ];
   my $ret;
   for my $uv (@update_versions) {
     $ret->{$uv} = $pkg->{$uv};

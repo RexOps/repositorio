@@ -25,13 +25,21 @@ sub query {
     return $self->render(json => {}, status => 404);
   }
 
-  my $ref = decode_json(IO::All->new(File::Spec->catfile($errata_dir, "errata.json"))->slurp);
-
   my $package = $self->param("package");
   my $arch    = $self->param("arch");
   my $version = $self->param("version");
 
-  my $pkg = $ref->{$arch}->{$package};
+  my $ref = decode_json(
+    IO::All->new(
+      File::Spec->catfile(
+        $errata_dir, $arch,
+        substr( $package, 0, 1 ), $package,
+        "errata.json"
+      )
+    )->slurp
+  );
+
+  my $pkg = $ref;
   my @versions = keys %{ $pkg };
 
   @versions = sort { $a cmp $b } @versions;
