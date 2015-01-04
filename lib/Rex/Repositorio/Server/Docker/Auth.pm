@@ -10,7 +10,10 @@ use Mojo::Base 'Mojolicious::Controller';
 use MIME::Base64;
 use File::Spec;
 use File::Path;
+use Digest::MD5 'md5_base64';
 use Rex::Repositorio::Server::Docker::Helper::Auth;
+use JSON::XS;
+use Data::Dumper;
 
 # TODO: implement authentication and authorization
 #       currently this is just a random string
@@ -33,6 +36,8 @@ sub login {
       my $user_o = Rex::Repositorio::Server::Docker::Helper::Auth->create("Plain", {
         user_path => $user_dir,
       });
+
+      $pass = md5_base64($pass);
 
       if($user_o->login($user, $pass)) {
         my $token = $self->_generate_token;
@@ -90,7 +95,9 @@ sub post_user {
     mkpath(File::Spec->catdir($user_dir, $username));
 
     open(my $fh, ">", File::Spec->catfile($user_dir, $username, "user.json")) or die($!);
-    print $fh $self->req->body;
+    my $ref = $self->req->json;
+    $ref->{password} = md5_base64($ref->{password});
+    print $fh encode_json($ref);
     close($fh);
 
     $self->res->headers->add("Content-Type", "application/json");
