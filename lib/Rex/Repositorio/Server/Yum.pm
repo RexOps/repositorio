@@ -26,7 +26,7 @@ sub startup {
     )
   );
 
-  $self->plugin("RenderFile");
+  $self->plugin("Rex::Repositorio::Server::Helper::RenderFile");
 
   my $r = $self->routes;
   $r->get('/')->to('file#index');

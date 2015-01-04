@@ -17,7 +17,6 @@ my %deps = (
   'Term::ReadKey'                   => 0,
   'JSON::XS'                        => 0,
   'Mojolicious'                     => 0,
-  'Mojolicious::Plugin::RenderFile' => 0,
 );
 
 WriteMakefile1(

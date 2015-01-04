@@ -20,7 +20,7 @@ sub startup {
     )
   );
 
-  $self->plugin("RenderFile");
+  $self->plugin("Rex::Repositorio::Server::Helper::RenderFile");
   $self->plugin("Rex::Repositorio::Server::Docker::Mojolicious::Plugin::DockerSession");
 
   my $r = $self->routes;
