@@ -369,7 +369,7 @@ sub get_errata {
   if ( $idx == -1 ) {
 
     # no updates found
-    return $self->render( json => {} );
+    return {};
   }
 
   $idx = 0 if ( $idx <= 0 );
