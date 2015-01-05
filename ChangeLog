@@ -1,3 +1,6 @@
+2015-01-05 Jan Gehring <jan.gehring, gmail.com> (0.3.2)
+  * fixed errata query if no package available
+
 2015-01-05 Jan Gehring <jan.gehring, gmail.com> (0.3.1)
   * fixed errata query if no updates available
 

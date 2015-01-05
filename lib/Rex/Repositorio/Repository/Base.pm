@@ -346,6 +346,17 @@ sub get_errata {
   my $errata_dir =
     $self->app->get_errata_dir( repo => $self->repo->{name}, tag => "head" );
 
+  if (
+    !-f File::Spec->catfile(
+      $errata_dir, $option{arch},
+      substr( $option{package}, 0, 1 ), $option{package},
+      "errata.json"
+    )
+    )
+  {
+    return {};
+  }
+
   my $ref = decode_json(
     IO::All->new(
       File::Spec->catfile(
@@ -390,7 +401,7 @@ sub update_errata {
   $self->app->logger->debug("Updating errata of type: $errata_type");
 
   my $data = $self->download("http://errata.repositor.io/$errata_type.tar.gz");
-  open(my $fh, ">", "/tmp/$errata_type.tar.gz") or confess($!);
+  open( my $fh, ">", "/tmp/$errata_type.tar.gz" ) or confess($!);
   binmode $fh;
   print $fh $data;
   close($fh);
@@ -402,7 +413,7 @@ sub update_errata {
 
   system "cd $errata_dir ; tar xzf /tmp/$errata_type.tar.gz";
 
-  if($? != 0) {
+  if ( $? != 0 ) {
     confess "Error extracting errata database.";
   }
 
