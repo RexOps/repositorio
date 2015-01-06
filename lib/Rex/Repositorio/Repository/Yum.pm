@@ -231,7 +231,6 @@ sub _run_createrepo {
   }
 }
 
-
 # test if all necessary parameters are available
 override verify_options => sub {
   my $self = shift;

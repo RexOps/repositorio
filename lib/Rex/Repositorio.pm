@@ -27,14 +27,20 @@ our $VERSION = "0.3.2";
 
 has config => ( is => 'ro' );
 has logger => ( is => 'ro' );
-has ua     => (
-  is      => 'ro',
-  default => sub {
-    my $ua = LWP::UserAgent->new;
-    $ua->env_proxy;
-    return $ua;
+
+sub ua {
+  my ( $self, %option ) = @_;
+  my $ua = LWP::UserAgent->new;
+  $ua->env_proxy;
+
+  if ( exists $option{ssl_opts} ) {
+    for my $key ( keys %{ $option{ssl_opts} } ) {
+      $ua->ssl_opts( $key, $option{ssl_opts}->{$key} );
+    }
   }
-);
+
+  return $ua;
+}
 
 sub run {
   my ( $self, %option ) = @_;
@@ -200,7 +206,7 @@ sub list {
 }
 
 sub update_errata {
-  my $self = shift;
+  my $self   = shift;
   my %option = validate(
     @_,
     {
@@ -208,7 +214,7 @@ sub update_errata {
         type => SCALAR
       },
     }
-  ); 
+  );
 
   my $repo   = $self->config->{Repository}->{ $option{repo} };
   my $type   = $repo->{type};

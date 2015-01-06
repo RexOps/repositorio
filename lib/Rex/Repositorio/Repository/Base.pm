@@ -29,6 +29,23 @@ use List::MoreUtils 'firstidx';
 has app  => ( is => 'ro' );
 has repo => ( is => 'ro' );
 
+sub ua {
+  my ($self) = @_;
+
+  my %option;
+  if ( exists $self->repo->{key} && exists $self->repo->{cert} ) {
+
+    # we need ssl client cert authentication
+    $option{ssl_opts} = {
+      SSL_cert_file => $self->repo->{cert},
+      SSL_key_file  => $self->repo->{key},
+      SSL_ca_file   => $self->repo->{ca},
+    };
+  }
+
+  return $self->app->ua(%option);
+}
+
 sub download_gzip {
   my ( $self, $url ) = @_;
 
@@ -59,7 +76,7 @@ sub download {
   my ( $self, $url ) = @_;
 
   $self->app->logger->debug("Starting download of: $url");
-  my $resp = $self->app->ua->get($url);
+  my $resp = $self->ua->get($url);
   $self->app->logger->debug("Finished download of: $url");
 
   if ( !$resp->is_success ) {
@@ -189,7 +206,7 @@ sub _download_binary_file {
 
   open my $fh, ">", $option{dest};
   binmode $fh;
-  my $resp = $self->app->ua->get(
+  my $resp = $self->ua->get(
     $option{url},
     ':content_cb' => sub {
       my ( $data, $response, $protocol ) = @_;
