@@ -14,6 +14,8 @@ use File::Basename 'basename';
 require IO::All;
 use JSON::XS;
 
+# VERSION
+
 sub put_image {
   my ($self) = @_;
 

@@ -15,6 +15,8 @@ use Params::Validate qw(:all);
 use File::Spec;
 use File::Path;
 
+# VERSION
+
 extends "Rex::Repositorio::Repository::Base";
 
 sub init {

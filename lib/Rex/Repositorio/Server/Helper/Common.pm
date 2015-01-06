@@ -9,6 +9,8 @@ package Rex::Repositorio::Server::Helper::Common;
 use strict;
 use warnings;
 
+# VERSION
+
 use Mojo::Base 'Mojolicious::Plugin';
 use Params::Validate qw(:all);
 use File::Spec;

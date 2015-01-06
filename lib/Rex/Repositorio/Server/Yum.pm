@@ -14,6 +14,8 @@ use Params::Validate qw(:all);
 use File::Basename 'dirname';
 use File::Spec::Functions 'catdir';
 
+# VERSION
+
 # This method will run once at server start
 sub startup {
   my $self = shift;

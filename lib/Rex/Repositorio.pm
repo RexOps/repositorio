@@ -23,7 +23,7 @@ use Rex::Repositorio::Repository_Factory;
 use JSON::XS;
 use Data::Dumper;
 
-our $VERSION = "0.3.2";
+# VERSION
 
 has config => ( is => 'ro' );
 has logger => ( is => 'ro' );
@@ -477,6 +477,8 @@ sub _help {
 1;
 
 __END__
+
+# ABSTRACT: repositor.io is a tool to create and manage linux repositories.
 
 =pod
 

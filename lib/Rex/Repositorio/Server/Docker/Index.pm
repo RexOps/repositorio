@@ -8,6 +8,8 @@ package Rex::Repositorio::Server::Docker::Index;
 
 use Mojo::Base 'Mojolicious::Controller';
 
+# VERSION
+
 sub index {
   my ($self) = @_;
   $self->render( json => { ok => 1 } );

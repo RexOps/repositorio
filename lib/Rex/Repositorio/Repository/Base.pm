@@ -26,6 +26,8 @@ use Term::ReadKey;
 use JSON::XS;
 use List::MoreUtils 'firstidx';
 
+# VERSION
+
 has app  => ( is => 'ro' );
 has repo => ( is => 'ro' );
 

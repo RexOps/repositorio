@@ -9,6 +9,8 @@ package Rex::Repositorio::Server::Docker::Mojolicious::Plugin::DockerSession;
 use strict;
 use warnings;
 
+# VERSION
+
 use Mojo::Base 'Mojolicious::Plugin';
 use Data::Dumper;
 use File::Spec;

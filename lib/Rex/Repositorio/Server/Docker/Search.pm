@@ -12,6 +12,8 @@ require IO::All;
 use JSON::XS;
 use Data::Dumper;
 
+# VERSION
+
 sub search {
   my ($self) = @_;
 

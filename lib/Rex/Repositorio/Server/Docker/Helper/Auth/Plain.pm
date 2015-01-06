@@ -11,6 +11,8 @@ use File::Spec;
 use JSON::XS;
 require IO::All;
 
+# VERSION
+
 has user_path => ( is => 'ro' );
 
 sub login {

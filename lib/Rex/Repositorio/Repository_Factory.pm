@@ -11,6 +11,8 @@ use Params::Validate qw(:all);
 use English;
 use Carp;
 
+# VERSION
+
 sub create {
   my $class  = shift;
   my %option = validate(

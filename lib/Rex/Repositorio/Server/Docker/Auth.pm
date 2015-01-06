@@ -15,6 +15,8 @@ use Rex::Repositorio::Server::Docker::Helper::Auth;
 use JSON::XS;
 use Data::Dumper;
 
+# VERSION
+
 # TODO: implement authentication and authorization
 #       currently this is just a random string
 sub login {

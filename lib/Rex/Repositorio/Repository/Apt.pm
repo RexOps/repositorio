@@ -17,6 +17,8 @@ use File::Spec;
 use File::Path;
 use IO::All;
 
+# VERSION
+
 extends "Rex::Repositorio::Repository::Base";
 
 sub mirror {

@@ -9,6 +9,8 @@ package Rex::Repositorio::Server::Docker::Helper::Auth;
 use strict;
 use warnings;
 
+# VERSION
+
 sub create {
   my ( $class, $type, $config ) = @_;
   my $auth_class = "Rex::Repositorio::Server::Docker::Helper::Auth::$type";

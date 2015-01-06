@@ -8,6 +8,8 @@ package Rex::Repositorio::Server::Docker;
 
 use Mojo::Base 'Mojolicious';
 
+# VERSION
+
 # This method will run once at server start
 sub startup {
   my $self = shift;

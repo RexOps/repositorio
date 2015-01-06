@@ -10,6 +10,8 @@ use Mojo::Base 'Mojolicious::Controller';
 use File::Spec;
 use File::Path;
 
+# VERSION
+
 sub serve {
   my ($self) = @_;
 
