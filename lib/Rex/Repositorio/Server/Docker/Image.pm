@@ -94,7 +94,8 @@ sub get_image_ancestry {
   while ($parent) {
     my $parent_id = basename $parent;
     push @ids, $parent_id;
-    $parent = readlink File::Spec->catfile( $image_dir, "..", $parent_id, "parent" );
+    $parent =
+      readlink File::Spec->catfile( $image_dir, "..", $parent_id, "parent" );
   }
 
   $self->render( json => \@ids );

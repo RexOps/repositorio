@@ -16,35 +16,37 @@ sub serve {
   my $file = $self->req->url;
   $self->app->log->debug("Serving: $file");
 
-#  my $repo_dir = $self->app->get_repo_dir( repo => $self->repo->{name} );
+  #  my $repo_dir = $self->app->get_repo_dir( repo => $self->repo->{name} );
   my $repo_dir = File::Spec->rel2abs( $self->config->{RepositoryRoot} );
 
   $self->app->log->debug("Path: $repo_dir");
 
-  my $serve_dir = File::Spec->catdir($repo_dir, $file);
+  my $serve_dir = File::Spec->catdir( $repo_dir, $file );
 
-  if( -d $serve_dir ) {
+  if ( -d $serve_dir ) {
     my @entries;
-    opendir(my $dh, $serve_dir) or die($!);
-    while(my $entry = readdir($dh)) {
-      next if($entry =~ m/^\./);
-      push @entries, {
+    opendir( my $dh, $serve_dir ) or die($!);
+    while ( my $entry = readdir($dh) ) {
+      next if ( $entry =~ m/^\./ );
+      push @entries,
+        {
         name => $entry,
-        file => (-f File::Spec->catfile($serve_dir, $entry)),
-      };
+        file => ( -f File::Spec->catfile( $serve_dir, $entry ) ),
+        };
     }
     closedir($dh);
 
-    @entries = sort { "$a->{file}-$a->{name}" cmp "$b->{file}-$b->{name}" } @entries;
+    @entries =
+      sort { "$a->{file}-$a->{name}" cmp "$b->{file}-$b->{name}" } @entries;
 
-    $self->stash(path => $file);
-    $self->stash(entries => \@entries);
+    $self->stash( path    => $file );
+    $self->stash( entries => \@entries );
 
     $self->render("file/serve");
   }
   else {
     $self->app->log->debug("File-Download: $serve_dir");
-    return $self->render_file(filepath => $serve_dir);
+    return $self->render_file( filepath => $serve_dir );
   }
 }
 
@@ -54,19 +56,19 @@ sub index {
   my $repo_dir = File::Spec->rel2abs( $self->config->{RepositoryRoot} );
 
   # get tags
-  opendir(my $dh, $repo_dir) or die($!);
+  opendir( my $dh, $repo_dir ) or die($!);
   my @tags;
-  while(my $entry = readdir($dh)) {
-    next if($entry =~ m/^\./);
-    if(-d File::Spec->catdir($repo_dir, $entry, $self->repo->{name})) {
+  while ( my $entry = readdir($dh) ) {
+    next if ( $entry =~ m/^\./ );
+    if ( -d File::Spec->catdir( $repo_dir, $entry, $self->repo->{name} ) ) {
       push @tags, $entry;
     }
   }
   closedir($dh);
 
-  $self->stash("path", "/");
-  $self->stash("tags", \@tags);
-  $self->stash(repo_name => $self->repo->{name});
+  $self->stash( "path", "/" );
+  $self->stash( "tags", \@tags );
+  $self->stash( repo_name => $self->repo->{name} );
 
   $self->render("file/index");
 }
