@@ -58,7 +58,7 @@ sub register {
       }
 
       # Create response headers
-      $filename = quote($filename);    # quote the filename, per RFC 5987
+      $filename = quote($filename); # quote the filename, per RFC 5987
       $filename = encode( "UTF-8", $filename );
 
       my $headers = Mojo::Headers->new();

@@ -127,10 +127,9 @@ sub server {
   require Mojolicious::Commands;
 
   # pass config to mojo app
-  $ENV{'REPO_CONFIG'}           = encode_json( $self->config );
-  $ENV{'REPO_NAME'}             = $option{repo};
-  $ENV{'MOJO_MAX_MESSAGE_SIZE'} = 1024 * 1024 * 1024 * 1024
-    ;    # set max_message_size astronomically high / TODO: make it configurable
+  $ENV{'REPO_CONFIG'} = encode_json( $self->config );
+  $ENV{'REPO_NAME'}   = $option{repo};
+  $ENV{'MOJO_MAX_MESSAGE_SIZE'} = 1024 * 1024 * 1024 * 1024; # set max_message_size astronomically high / TODO: make it configurable
   my $server_type = $self->config->{Repository}->{ $option{repo} }->{type};
   if ( $server_type eq "Apt" ) {
     $server_type = "Yum";
