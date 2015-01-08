@@ -193,7 +193,7 @@ sub _download_binary_file {
   mkpath( dirname( $option{dest} ) ) if ( !-d dirname $option{dest} );
 
   if ( -f $option{dest} && !$option{force} ) {
-    $self->app->logger->debug("Skipping $option{url}. File aready exists.");
+    $self->app->logger->debug("Skipping $option{url}. File already exists.");
     return;
   }
 
