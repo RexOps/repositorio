@@ -19,8 +19,8 @@ use Getopt::Long;
 use lib '/usr/lib/rex/perl/share/perl5/vendor_perl';
 
 my @config_file_locations = (
-  "/etc/rex/repositorio.conf", "/usr/local/etc/rex/repositorio.conf",
-  "./repositorio.conf"
+  "./repositorio.conf", "/etc/rex/repositorio.conf", 
+  "/usr/local/etc/rex/repositorio.conf"
 );
 
 my ($config_file) = grep { -f $_ } @config_file_locations;
@@ -71,7 +71,7 @@ behind a firewall and disable outgoing http traffic.
 
 With repositor.io it is easy to create custom repositories for your own
 packages. With the integration of a configuration management tool you can
-create consistant installations of your server.
+ensure consistent server installations.
 
 =head2 GETTING HELP
 
