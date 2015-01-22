@@ -40,6 +40,11 @@ sub mirror {
   my $ref      = $self->_parse_debian_release_file($contents);
   my $arch     = $self->repo->{arch};
 
+  my $pr = $self->app->progress_bar(
+    title  => "Downloading metadata...",
+    length => 2,
+  );
+
   # try download Release and Release.gpg
   try {
     $self->download_metadata(
@@ -48,18 +53,33 @@ sub mirror {
       force => $option{update_metadata},
     );
 
+    $pr->update(1);
+
     $self->download_metadata(
       url   => $url . "/Release.gpg",
       dest  => $self->repo->{local} . "/dists/$dist/Release.gpg",
       force => $option{update_metadata},
     );
+
+    $pr->update(2);
+
   }
   catch {
     $self->app->logger->error($_);
   };
 
   my $i = 0;
+  print "\n";
+  print "\n";
+  $pr = $self->app->progress_bar(
+    title  => "Downloading contents...",
+    length => scalar( @{ $ref->{SHA1} } ),
+  );
+
   for my $file_data ( @{ $ref->{SHA1} } ) {
+    $i++;
+    $pr->update($i);
+
     my $file_url = $url . "/" . $file_data->{file};
     my $file     = $file_data->{file};
     next
@@ -77,8 +97,6 @@ sub mirror {
         "Can't find the url: $file_url. " . "This should be no problem." );
       $self->app->logger->info($_);
     };
-
-    $i++;
   }
 
   ##############################################################################
@@ -107,7 +125,17 @@ sub mirror {
       my $content     = $self->gunzip( io($local_packages_path)->binary->all );
       my $package_ref = $self->_parse_debian_package_file($content);
 
+      print "\n";
+      print "\n";
+      $pr = $self->app->progress_bar(
+        title  => "Downloading packages for $component ($arch)...",
+        length => scalar( @{$package_ref} ),
+      );
+      my $pi = 0;
+
       for my $package ( @{$package_ref} ) {
+        $pi++;
+        $pr->update($pi);
         my $package_url  = $self->repo->{url} . "/" . $package->{Filename};
         my $package_name = $package->{Package};
 
@@ -128,8 +156,19 @@ sub mirror {
   ##############################################################################
   # download rest of metadata
   ##############################################################################
+
+  print "\n";
+  print "\n";
+  $pr = $self->app->progress_bar(
+    title  => "Downloading rest of metadata...",
+    length => ( 2 * scalar(@archs) ),
+  );
+
+  my $mi = 0;
   for my $arch (@archs) {
     for my $suffix (qw/bz2 gz/) {
+      $mi++;
+      $pr->update($mi);
       my $file_url = $url . "/Contents-$arch.$suffix";
       my $file     = "Contents-$arch.$suffix";
 

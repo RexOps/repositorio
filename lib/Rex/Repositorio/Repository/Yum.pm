@@ -28,9 +28,16 @@ sub mirror {
   $self->repo->{local} =~ s/\/$//;
   my $name = $self->repo->{name};
 
+  my $pr = $self->app->progress_bar(
+    title  => "Downloading metadata...",
+    length => 3,
+  );
+
   my $repomd_ref =
     $self->decode_xml(
     $self->download( $self->repo->{url} . "/repodata/repomd.xml" ) );
+
+  $pr->update(1);
 
   my ($primary_file) =
     grep { $_->{type} eq "primary" } @{ $repomd_ref->{data} };
@@ -59,7 +66,39 @@ sub mirror {
       };
   }
 
+  try {
+    $self->download_metadata(
+      url   => $self->repo->{url} . "/repodata/repomd.xml",
+      dest  => $self->repo->{local} . "/repodata/repomd.xml",
+      force => $option{update_metadata},
+    );
+
+    $pr->update(2);
+
+    $self->download_metadata(
+      url   => $self->repo->{url} . "/repodata/repomd.xml.asc",
+      dest  => $self->repo->{local} . "/repodata/repomd.xml.asc",
+      force => $option{update_metadata},
+    );
+
+    $pr->update(3);
+  }
+  catch {
+    $self->app->logger->error($_);
+  };
+
+  my $i = 0;
+  print "\n";
+  print "\n";
+  $pr = $self->app->progress_bar(
+    title  => "Downloading packages...",
+    length => scalar(@packages),
+  );
+
   for my $package (@packages) {
+    $i++;
+    $pr->update($i);
+
     my $package_url  = $self->repo->{url} . "/" . $package->{location};
     my $package_name = $package->{name};
 
@@ -79,24 +118,18 @@ sub mirror {
     );
   }
 
-  try {
-    $self->download_metadata(
-      url   => $self->repo->{url} . "/repodata/repomd.xml",
-      dest  => $self->repo->{local} . "/repodata/repomd.xml",
-      force => $option{update_metadata},
-    );
+  print "\n";
+  print "\n";
+  $pr = $self->app->progress_bar(
+    title  => "Downloading rest of metadata...",
+    length => scalar( @{ $repomd_ref->{data} } ),
+  );
 
-    $self->download_metadata(
-      url   => $self->repo->{url} . "/repodata/repomd.xml.asc",
-      dest  => $self->repo->{local} . "/repodata/repomd.xml.asc",
-      force => $option{update_metadata},
-    );
-  }
-  catch {
-    $self->app->logger->error($_);
-  };
-
+  my $mi = 0;
   for my $file_data ( @{ $repomd_ref->{data} } ) {
+    $mi++;
+    $pr->update($mi);
+
     my $file_url =
       $self->{repo}->{url} . "/" . $file_data->{location}->[0]->{href};
     my $file = basename $file_data->{location}->[0]->{href};
@@ -116,6 +149,15 @@ sub mirror {
   }
 
   if ( exists $self->repo->{images} && $self->repo->{images} eq "true" ) {
+
+    print "\n";
+    print "\n";
+    $pr = $self->app->progress_bar(
+      title  => "Downloading images...",
+      length => 7,
+    );
+
+    my $ii = 0;
     for my $file (
       (
         "images/boot.iso",           "images/efiboot.img",
@@ -125,6 +167,9 @@ sub mirror {
       )
       )
     {
+      $ii++;
+      $pr->update($ii);
+
       my $file_url   = $self->repo->{url} . "/" . $file;
       my $local_file = $self->repo->{local} . "/" . $file;
       try {

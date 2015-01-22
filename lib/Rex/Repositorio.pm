@@ -22,6 +22,8 @@ use File::Copy;
 use Rex::Repositorio::Repository_Factory;
 use JSON::XS;
 use Data::Dumper;
+use Term::ProgressBar;
+use Term::ANSIColor;
 
 # VERSION
 
@@ -58,11 +60,18 @@ sub parse_cli_option {
   }
 
   if ( exists $option{mirror} && exists $option{repo} ) {
+    $self->print_info("Going to mirror " . $option{repo} . ". This may take a while.");
+    print "\n";
+
     $self->mirror(
       repo            => $option{repo},
       update_metadata => $option{"update-metadata"},
       update_files    => $option{"update-files"},
     );
+
+    print "\n"; print "\n";
+    $self->print_info("Finished downloading of files for " . $option{repo});
+    print "\n";
   }
 
   elsif ( exists $option{tag} && exists $option{repo} ) {
@@ -437,6 +446,49 @@ sub get_repo_dir {
   return File::Spec->rel2abs( $self->config->{RepositoryRoot}
       . "/head/"
       . $self->config->{Repository}->{ $option{repo} }->{local} );
+}
+
+sub progress_bar {
+  my $self   = shift;
+  my %option = validate(
+    @_,
+    {
+      title => {
+        type => SCALAR,
+      },
+      length => {
+        type => SCALAR,
+      }
+    }
+  );
+
+  $self->print_info( $option{title} );
+  print "\n";
+
+  my $pr = Term::ProgressBar->new( { count => $option{length} } );
+  return $pr;
+}
+
+sub print_info {
+  my ( $self, $msg ) = @_;
+  print color "bold green";
+  print ">> ";
+  print color "reset";
+
+  my @parts = split( / /, $msg );
+  my $current_line_len = 3;
+
+  for my $part (@parts) {
+    $current_line_len += length $part;
+    if ( $current_line_len >= 80 ) {
+      print "\n   ";
+      $current_line_len = 3;
+    }
+
+    print "$part ";
+  }
+
+  print "\n";
 }
 
 sub _print {
