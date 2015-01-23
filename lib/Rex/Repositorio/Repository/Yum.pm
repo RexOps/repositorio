@@ -84,6 +84,7 @@ sub mirror {
     $pr->update(3);
   }
   catch {
+    $pr->update(3);
     $self->app->logger->error($_);
   };
 
