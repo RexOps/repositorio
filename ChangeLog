@@ -1,3 +1,6 @@
+2015-01-31 Jan Gehring <jan.gehring, gmail.com> (0.6.0)
+  * added plain http directory mirror
+
 2015-01-23 Jan Gehring <jan.gehring, gmail.com> (0.5.0)
   * added progressbar
   * fixed typos - dirkcjelli
