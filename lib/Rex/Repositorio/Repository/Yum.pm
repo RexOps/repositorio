@@ -33,38 +33,9 @@ sub mirror {
     length => 3,
   );
 
-  my $repomd_ref =
-    $self->decode_xml(
-    $self->download( $self->repo->{url} . "/repodata/repomd.xml" ) );
-
-  $pr->update(1);
-
-  my ($primary_file) =
-    grep { $_->{type} eq "primary" } @{ $repomd_ref->{data} };
-  $primary_file = $primary_file->{location}->[0]->{href};
-
-  my $url = $self->repo->{url} . "/" . $primary_file;
-  $self->app->logger->debug("Downloading $url.");
-  my $xml = $self->get_xml( $self->download_gzip($url) );
-
-  my @packages;
-  my @xml_packages = $xml->getElementsByTagName('package');
-  for my $xml_package (@xml_packages) {
-    my ($name_node)     = $xml_package->getChildrenByTagName("name");
-    my ($checksum_node) = $xml_package->getChildrenByTagName("checksum");
-    my ($size_node)     = $xml_package->getChildrenByTagName("size");
-    my ($location_node) = $xml_package->getChildrenByTagName("location");
-    push @packages,
-      {
-      location => $location_node->getAttribute("href"),
-      name     => $name_node->textContent,
-      checksum => {
-        type => $checksum_node->getAttribute("type"),
-        data => $checksum_node->textContent,
-      },
-      size => $size_node->getAttribute("archive"),
-      };
-  }
+  my ($packages_ref, $repomd_ref);
+  ($packages_ref, $repomd_ref) = $self->_get_repomd_xml($self->repo->{url});
+  my @packages = @{ $packages_ref };
 
   try {
     $self->download_metadata(
@@ -88,36 +59,7 @@ sub mirror {
     $self->app->logger->error($_);
   };
 
-  my $i = 0;
-  print "\n";
-  print "\n";
-  $pr = $self->app->progress_bar(
-    title  => "Downloading packages...",
-    length => scalar(@packages),
-  );
-
-  for my $package (@packages) {
-    $i++;
-    $pr->update($i);
-
-    my $package_url  = $self->repo->{url} . "/" . $package->{location};
-    my $package_name = $package->{name};
-
-    my $local_file = $self->repo->{local} . "/" . $package->{location};
-    $self->download_package(
-      url  => $package_url,
-      name => $package_name,
-      dest => $local_file,
-      cb   => sub {
-        $self->_checksum(
-          @_,
-          $package->{checksum}->{type},
-          $package->{checksum}->{data}
-        );
-      },
-      force => $option{update_files}
-    );
-  }
+  $self->_download_packages(\%option, @packages);
 
   print "\n";
   print "\n";
@@ -186,6 +128,80 @@ sub mirror {
       };
     }
   }
+}
+
+sub _download_packages {
+  my ($self, $_option, @packages) = @_;
+
+  my %option = %{ $_option };
+
+  my $i = 0;
+  print "\n";
+  print "\n";
+  my $pr = $self->app->progress_bar(
+    title  => "Downloading packages...",
+    length => scalar(@packages),
+  );
+
+  for my $package (@packages) {
+    $i++;
+    $pr->update($i);
+
+    my $package_url  = $self->repo->{url} . "/" . $package->{location};
+    my $package_name = $package->{name};
+
+    my $local_file = $self->repo->{local} . "/" . $package->{location};
+    $self->download_package(
+      url  => $package_url,
+      name => $package_name,
+      dest => $local_file,
+      cb   => sub {
+        $self->_checksum(
+          @_,
+          $package->{checksum}->{type},
+          $package->{checksum}->{data}
+        );
+      },
+      force => $option{update_files}
+    );
+  }
+}
+
+sub _get_repomd_xml {
+  my ($self, $url) = @_;
+
+  my $repomd_ref =
+    $self->decode_xml(
+    $self->download( "$url/repodata/repomd.xml" ) );
+
+  my ($primary_file) =
+    grep { $_->{type} eq "primary" } @{ $repomd_ref->{data} };
+  $primary_file = $primary_file->{location}->[0]->{href};
+
+  $url = $url . "/" . $primary_file;
+  $self->app->logger->debug("Downloading $url.");
+  my $xml = $self->get_xml( $self->download_gzip($url) );
+
+  my @packages;
+  my @xml_packages = $xml->getElementsByTagName('package');
+  for my $xml_package (@xml_packages) {
+    my ($name_node)     = $xml_package->getChildrenByTagName("name");
+    my ($checksum_node) = $xml_package->getChildrenByTagName("checksum");
+    my ($size_node)     = $xml_package->getChildrenByTagName("size");
+    my ($location_node) = $xml_package->getChildrenByTagName("location");
+    push @packages,
+      {
+      location => $location_node->getAttribute("href"),
+      name     => $name_node->textContent,
+      checksum => {
+        type => $checksum_node->getAttribute("type"),
+        data => $checksum_node->textContent,
+      },
+      size => $size_node->getAttribute("archive"),
+      };
+  }
+
+  return (\@packages, $repomd_ref);
 }
 
 sub init {
