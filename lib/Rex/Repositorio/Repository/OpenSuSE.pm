@@ -48,6 +48,8 @@ sub mirror {
     }
   }
 
+  @all_meta_files = grep { ! m/\/$/ } @all_meta_files;
+
   push @all_meta_files, "suse/repodata/repomd.xml";
   push @all_meta_files, "suse/repodata/repomd.xml.asc";
   push @all_meta_files, "suse/repodata/repomd.xml.key";
