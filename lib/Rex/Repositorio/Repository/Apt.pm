@@ -220,7 +220,7 @@ sub mirror {
               $self->repo->{url}
             . "/dists/$dist/$component/installer-$arch/current/images/"
             . $file->{file};
-          my $file_name = $package->{file};
+          my $file_name = $file->{file};
 
           my $local_file = File::Spec->catfile( $self->repo->{local},
             "dists", $dist, $component, "installer-$arch", "current", "images",
