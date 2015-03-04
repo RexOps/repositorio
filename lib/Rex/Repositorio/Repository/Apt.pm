@@ -83,8 +83,8 @@ sub mirror {
 
     my $file_url = $url . "/" . $file_data->{file};
     my $file     = $file_data->{file};
-    my $arch_str = join("|", @archs);
-    my $regexp = qr{i18n|((Contents|binary|installer)\-(udeb-)?($arch_str))};
+    my $arch_str = join( "|", @archs );
+    my $regexp   = qr{i18n|((Contents|binary|installer)\-(udeb-)?($arch_str))};
     next
       if ( $file_data->{file} !~ $regexp );
 
@@ -156,15 +156,21 @@ sub mirror {
     }
 
     if ( exists $self->repo->{images} && $self->repo->{images} eq "true" ) {
+
       # installer components
       for my $arch (@archs) {
-        $self->app->logger->debug("Processing installer ($name, $component) $dist / $arch");
+
+        next if ( "\L$arch" eq "all" );
+        next if ( "\L$component" ne "main" );
+
+        $self->app->logger->debug(
+          "Processing installer ($name, $component) $dist / $arch");
 
         my $local_packages_path =
           $local_components_path . "/debian-installer/binary-$arch/Packages.gz";
 
         $self->app->logger->debug("Reading: $local_packages_path");
-        my $content     = $self->gunzip( io($local_packages_path)->binary->all );
+        my $content = $self->gunzip( io($local_packages_path)->binary->all );
         my $package_ref = $self->_parse_debian_package_file($content);
 
         print "\n";
@@ -188,6 +194,43 @@ sub mirror {
             dest => $local_file,
             cb   => sub {
               $self->_checksum( @_, "sha1", $package->{SHA1} );
+            },
+            force => $option{update_files}
+          );
+        }
+
+        my $local_file_path =
+          $local_components_path . "/installer-$arch/current/images";
+        my $file_ref =
+          $self->_parse_sha256sum_file( $local_file_path . "/SHA256SUMS" );
+
+        print "\n";
+        print "\n";
+        $pr = $self->app->progress_bar(
+          title =>
+            "Downloading installer image files for $component ($arch)...",
+          length => scalar( @{$package_ref} ),
+        );
+        my $fi = 0;
+
+        for my $file ( @{$file_ref} ) {
+          $fi++;
+          $pr->update($fi);
+          my $file_url =
+              $self->repo->{url}
+            . "/dists/$dist/$component/installer-$arch/current/images/"
+            . $file->{file};
+          my $file_name = $package->{file};
+
+          my $local_file = File::Spec->catfile( $self->repo->{local},
+            "dists", $dist, $component, "installer-$arch", "current", "images",
+            $file->{file} );
+          $self->download_package(
+            url  => $file_url,
+            name => $file_name,
+            dest => $local_file,
+            cb   => sub {
+              $self->_checksum( @_, "sha256", $file->{sha256} );
             },
             force => $option{update_files}
           );
@@ -305,6 +348,20 @@ sub _parse_debian_package_file {
   }
 
   return \@ret;
+}
+
+sub _parse_sha256sum_file {
+  my ( $self, $file ) = @_;
+  my @files;
+  open my $fh, "<", $file or die $!;
+  while ( my $line = <$fh> ) {
+    my ( $sum, $file_name ) = split( /\s+/, $line );
+    $file_name =~ s/^\.\///;
+    push @files, { sha256 => $sum, file => $file_name };
+  }
+  close $fh;
+
+  return \@files;
 }
 
 sub init {
