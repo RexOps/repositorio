@@ -73,7 +73,7 @@ sub mirror {
   print "\n";
   print "\n";
   $pr = $self->app->progress_bar(
-    title  => "Downloading contents...",
+    title  => "Downloading file listing...",
     length => scalar( @{ $ref->{SHA1} } ),
   );
 
@@ -83,8 +83,10 @@ sub mirror {
 
     my $file_url = $url . "/" . $file_data->{file};
     my $file     = $file_data->{file};
+    my $arch_str = join("|", @archs);
+    my $regexp = qr{i18n|((Contents|binary|installer)\-(udeb-)?($arch_str))};
     next
-      if ( $file_data->{file} !~ m/i18n|((Contents|binary|installer)\-$arch)/ );
+      if ( $file_data->{file} !~ $regexp );
 
     try {
       $self->download_metadata(
@@ -150,6 +152,46 @@ sub mirror {
           },
           force => $option{update_files}
         );
+      }
+    }
+
+    if ( exists $self->repo->{images} && $self->repo->{images} eq "true" ) {
+      # installer components
+      for my $arch (@archs) {
+        $self->app->logger->debug("Processing installer ($name, $component) $dist / $arch");
+
+        my $local_packages_path =
+          $local_components_path . "/debian-installer/binary-$arch/Packages.gz";
+
+        $self->app->logger->debug("Reading: $local_packages_path");
+        my $content     = $self->gunzip( io($local_packages_path)->binary->all );
+        my $package_ref = $self->_parse_debian_package_file($content);
+
+        print "\n";
+        print "\n";
+        $pr = $self->app->progress_bar(
+          title  => "Downloading installer packages for $component ($arch)...",
+          length => scalar( @{$package_ref} ),
+        );
+        my $pi = 0;
+
+        for my $package ( @{$package_ref} ) {
+          $pi++;
+          $pr->update($pi);
+          my $package_url  = $self->repo->{url} . "/" . $package->{Filename};
+          my $package_name = $package->{Package};
+
+          my $local_file = $self->repo->{local} . "/" . $package->{Filename};
+          $self->download_package(
+            url  => $package_url,
+            name => $package_name,
+            dest => $local_file,
+            cb   => sub {
+              $self->_checksum( @_, "sha1", $package->{SHA1} );
+            },
+            force => $option{update_files}
+          );
+        }
       }
     }
   }
