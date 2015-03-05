@@ -74,10 +74,10 @@ sub mirror {
   print "\n";
   $pr = $self->app->progress_bar(
     title  => "Downloading file listing...",
-    length => scalar( @{ $ref->{SHA1} } ),
+    length => scalar( @{ $ref->{SHA1} || $ref->{SHA1Sum} } ),
   );
 
-  for my $file_data ( @{ $ref->{SHA1} } ) {
+  for my $file_data ( @{ $ref->{SHA1} || $ref->{SHA1Sum} } ) {
     $i++;
     $pr->update($i);
 
@@ -148,7 +148,7 @@ sub mirror {
           name => $package_name,
           dest => $local_file,
           cb   => sub {
-            $self->_checksum( @_, "sha1", $package->{SHA1} );
+            $self->_checksum( @_, "sha1", ($package->{SHA1} || $package->{SHA1Sum}) );
           },
           force => $option{update_files}
         );
@@ -193,7 +193,7 @@ sub mirror {
             name => $package_name,
             dest => $local_file,
             cb   => sub {
-              $self->_checksum( @_, "sha1", $package->{SHA1} );
+              $self->_checksum( @_, "sha1", ($package->{SHA1} || $package->{SHA1Sum} ) );
             },
             force => $option{update_files}
           );
