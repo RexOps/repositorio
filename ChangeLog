@@ -1,3 +1,7 @@
+2015-03-05 Jan Gehring <jan.gehring, gmail.com> (0.6.1)
+  * fixed a bug mirroring debian installation repositories
+	* fixed a bug mirroring some type of debian repositories
+
 2015-01-31 Jan Gehring <jan.gehring, gmail.com> (0.6.0)
   * added plain http directory mirror
 
