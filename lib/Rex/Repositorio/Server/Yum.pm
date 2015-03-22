@@ -21,6 +21,7 @@ sub startup {
   my $self = shift;
 
   $self->plugin("Rex::Repositorio::Server::Helper::Common");
+  $self->plugin("Rex::Repositorio::Server::Helper::Proxy");
 
   $self->app->log(
     Mojo::Log->new(
