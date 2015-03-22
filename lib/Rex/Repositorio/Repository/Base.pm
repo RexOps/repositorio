@@ -84,7 +84,17 @@ sub download {
   if ( !$resp->is_success ) {
     $self->app->logger->error("Can't download $url.");
     $self->app->logger->error( "Status: " . $resp->status_line );
-    confess "Error downloading $url.";
+    my $retry_count = 1;
+    while ( !$resp->is_success
+      && $retry_count <= ( $self->app->config->{DownloadRetryCount} // 3 ) )
+    {
+      $self->app->logger->error("Retry downloading of url: $url");
+      $retry_count += 1;
+      $resp = $self->ua->get($url);
+    }
+    if ( !$resp->is_success ) {
+      confess "Error downloading $url.";
+    }
   }
 
   return $resp->content;
