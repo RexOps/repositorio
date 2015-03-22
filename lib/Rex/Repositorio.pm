@@ -35,6 +35,12 @@ sub ua {
   my $ua = LWP::UserAgent->new;
   $ua->env_proxy;
 
+  if ( $self->config->{DownloadTimeout} ) {
+    $self->logger->debug(
+      "Setting download timeout to: " . $self->config->{DownloadTimeout} );
+    $ua->timeout( $self->config->{DownloadTimeout} );
+  }
+
   if ( exists $option{ssl_opts} ) {
     for my $key ( keys %{ $option{ssl_opts} } ) {
       $ua->ssl_opts( $key, $option{ssl_opts}->{$key} );
@@ -60,7 +66,8 @@ sub parse_cli_option {
   }
 
   if ( exists $option{mirror} && exists $option{repo} ) {
-    $self->print_info("Going to mirror " . $option{repo} . ". This may take a while.");
+    $self->print_info(
+      "Going to mirror " . $option{repo} . ". This may take a while." );
     print "\n";
 
     $self->mirror(
@@ -69,8 +76,9 @@ sub parse_cli_option {
       update_files    => $option{"update-files"},
     );
 
-    print "\n"; print "\n";
-    $self->print_info("Finished downloading of files for " . $option{repo});
+    print "\n";
+    print "\n";
+    $self->print_info( "Finished downloading of files for " . $option{repo} );
     print "\n";
   }
 
