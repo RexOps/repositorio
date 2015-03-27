@@ -31,14 +31,17 @@ sub serve {
   my $orig_url   = $file;
   my $local_part = $self->repo->{local};
   my $repo_url   = $self->repo->{url};
-  $repo_url =~ s/\/$//;
 
-  $orig_url =~ s/^\/([^\/]+)\/\Q$local_part\E//;
-  $orig_url = $repo_url . $orig_url;
+  if ($repo_url) {
+    $repo_url =~ s/\/$//;
 
-  $self->app->log->debug("Orig-URL: $orig_url");
+    $orig_url =~ s/^\/([^\/]+)\/\Q$local_part\E//;
+    $orig_url = $repo_url . $orig_url;
 
-  my $do_proxy = lc( $self->repo->{proxy} ) || "false";
+    $self->app->log->debug("Orig-URL: $orig_url");
+  }
+
+  my $do_proxy = lc( $self->repo->{proxy} || "false" );
 
   if ( -d $serve_dir ) {
     my @entries;
