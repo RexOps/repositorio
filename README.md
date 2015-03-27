@@ -10,14 +10,20 @@ If you need help, feel free to join us on irc.freenode.net on channel #rex (this
 
 ### Supported Repositories
 
-Right now *yum* and *apt* repositories are supported. It is also possible to query errata for packages if an errata database is present. See *errata* chapter for more information.
+Right now *yum*, *apt* and *yast (opensuse)* repositories are supported. It is also possible to query errata for packages if an errata database is present. See *errata* chapter for more information.
 
 Currently we're working on *docker* support, so that it is possible to build a private docker registry with repositorio. See *docker* chapter for more information.
+
+YaST (OpenSuSE) repository support is only for mirroring. If you want to create custom repositories for your SuSE systems, repositorio will create yum repositories. You can add those repositories with the following command:
+
+```
+zypper ar -t YUM http://my-repo-server.domain.tld/head/my-repo/ my-repo
+```
 
 
 ### Configuration
 
-To configure repositorio create a configuration file */etc/rex/repositorio.conf*.
+To configure repositorio create a configuration file */etc/rex/repositorio.conf*. For an example file please see *repositorio.conf* file in this repository.
 
 ```
 RepositoryRoot = /data/repositories
