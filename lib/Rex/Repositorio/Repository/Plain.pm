@@ -47,7 +47,6 @@ sub mirror {
       grep { $_ !~ m/\/$/ } @links;
   }
 
-
   my $pr = $self->app->progress_bar(
     title  => "Downloading packages...",
     length => scalar(@files),
@@ -58,10 +57,12 @@ sub mirror {
     $i++;
     $pr->update($i);
 
-    my $path = $file;
+    my $path     = $file;
     my $repo_url = $self->repo->{url};
     $path =~ s/$repo_url//g;
-    my $local_path = File::Spec->catdir($self->app->get_repo_dir(repo => $self->repo->{name}), dirname($path));
+    my $local_path = File::Spec->catdir(
+      $self->app->get_repo_dir( repo => $self->repo->{name} ),
+      dirname($path) );
     mkpath $local_path;
 
     my $local_file = $self->repo->{local} . "/" . $path;

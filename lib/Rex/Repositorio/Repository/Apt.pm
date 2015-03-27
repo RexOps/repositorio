@@ -148,7 +148,8 @@ sub mirror {
           name => $package_name,
           dest => $local_file,
           cb   => sub {
-            $self->_checksum( @_, "sha1", ($package->{SHA1} || $package->{SHA1Sum}) );
+            $self->_checksum( @_, "sha1",
+              ( $package->{SHA1} || $package->{SHA1Sum} ) );
           },
           force => $option{update_files}
         );
@@ -193,7 +194,8 @@ sub mirror {
             name => $package_name,
             dest => $local_file,
             cb   => sub {
-              $self->_checksum( @_, "sha1", ($package->{SHA1} || $package->{SHA1Sum} ) );
+              $self->_checksum( @_, "sha1",
+                ( $package->{SHA1} || $package->{SHA1Sum} ) );
             },
             force => $option{update_files}
           );

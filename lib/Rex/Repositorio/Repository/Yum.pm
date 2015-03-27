@@ -33,9 +33,9 @@ sub mirror {
     length => 3,
   );
 
-  my ($packages_ref, $repomd_ref);
-  ($packages_ref, $repomd_ref) = $self->_get_repomd_xml($self->repo->{url});
-  my @packages = @{ $packages_ref };
+  my ( $packages_ref, $repomd_ref );
+  ( $packages_ref, $repomd_ref ) = $self->_get_repomd_xml( $self->repo->{url} );
+  my @packages = @{$packages_ref};
 
   try {
     $self->download_metadata(
@@ -59,7 +59,7 @@ sub mirror {
     $self->app->logger->error($_);
   };
 
-  $self->_download_packages(\%option, @packages);
+  $self->_download_packages( \%option, @packages );
 
   print "\n";
   print "\n";
@@ -131,9 +131,9 @@ sub mirror {
 }
 
 sub _download_packages {
-  my ($self, $_option, @packages) = @_;
+  my ( $self, $_option, @packages ) = @_;
 
-  my %option = %{ $_option };
+  my %option = %{$_option};
 
   my $i = 0;
   print "\n";
@@ -168,11 +168,10 @@ sub _download_packages {
 }
 
 sub _get_repomd_xml {
-  my ($self, $url) = @_;
+  my ( $self, $url ) = @_;
 
   my $repomd_ref =
-    $self->decode_xml(
-    $self->download( "$url/repodata/repomd.xml" ) );
+    $self->decode_xml( $self->download("$url/repodata/repomd.xml") );
 
   my ($primary_file) =
     grep { $_->{type} eq "primary" } @{ $repomd_ref->{data} };
@@ -201,7 +200,7 @@ sub _get_repomd_xml {
       };
   }
 
-  return (\@packages, $repomd_ref);
+  return ( \@packages, $repomd_ref );
 }
 
 sub init {
