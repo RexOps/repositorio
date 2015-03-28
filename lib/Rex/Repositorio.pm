@@ -418,6 +418,9 @@ sub tag {
 
       $self->logger->debug(
         "Linking (hard): $dir/$entry -> $tag_dir/$rel_entry");
+      if ( -f File::Spec->catfile( $tag_dir, $rel_entry ) ) {
+        unlink File::Spec->catfile( $tag_dir, $rel_entry );
+      }
       link "$dir/$entry", "$tag_dir/$rel_entry";
     }
     closedir $dh;
