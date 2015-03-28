@@ -1,6 +1,7 @@
 2015-03-26 Jan Gehring <jan.gehring, gmail.com> (0.7.0)
   * added proxy support for linux repositories
   * added OpenSuSE mirror support
+	* fixed a problem when using the same tag twice
 
 2015-03-05 Jan Gehring <jan.gehring, gmail.com> (0.6.0)
   * fixed a bug mirroring debian installation repositories
