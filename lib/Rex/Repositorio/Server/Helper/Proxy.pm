@@ -12,15 +12,15 @@ sub register {
       my $c   = shift;
       my $url = Mojo::URL->new(shift);
       my $cb  = shift || sub { };
-      my $ua  = Mojo::UserAgent->new;
-      if ( $self->repo->{ca} ) {
-        $ua->ca( $self->repo->{ca} );
+      my $ua  = $c->ua;
+      if ( $c->repo->{ca} ) {
+        $ua->ca( $c->repo->{ca} );
       }
-      if ( $self->repo->{key} ) {
-        $ua->key( $self->repo->{key} );
+      if ( $c->repo->{key} ) {
+        $ua->key( $c->repo->{key} );
       }
-      if ( $self->repo->{cert} ) {
-        $ua->cert( $self->repo->{cert} );
+      if ( $c->repo->{cert} ) {
+        $ua->cert( $c->repo->{cert} );
       }
 
       my %args = @_;

@@ -36,6 +36,11 @@ sub serve {
     $repo_url =~ s/\/$//;
 
     $orig_url =~ s/^\/([^\/]+)\/\Q$local_part\E//;
+
+    if ( $repo_url !~ m/\/$/ ) {
+      $repo_url .= "/";
+    }
+
     $orig_url = $repo_url . $orig_url;
 
     $self->app->log->debug("Orig-URL: $orig_url");
