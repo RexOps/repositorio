@@ -70,18 +70,8 @@ sub parse_cli_option {
       "Going to mirror " . $option{repo} . ". This may take a while." );
     print "\n";
 
-    my $update_files = 0;
+    my $update_files = 1;
 
-    # if metadata should be updates, also update files
-    if ( exists $option{"update-metadata"} && $option{"update-metadata"} ) {
-      $update_files = 1;
-    }
-
-    if ( exists $option{"update-files"} && $option{"update-files"} ) {
-      $update_files = 1;
-    }
-
-   # no-update-files overwrites all previous options.
    # so it is possible to only update metadata. (for example: for proxy support)
     if ( exists $option{"no-update-files"} && $option{"no-update-files"} ) {
       $update_files = 0;
