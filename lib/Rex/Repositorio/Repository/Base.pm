@@ -128,20 +128,25 @@ sub download_package {
         type     => CODEREF,
         optional => 1,
       },
+      update_file => {
+        type     => BOOLEAN,
+        optional => 1,
+      },
       force => {
         type     => BOOLEAN,
         optional => 1,
-      }
+      },
     }
   );
 
   my $package_file =
     $self->app->config->{RepositoryRoot} . "/head/" . $option{dest};
   $self->_download_binary_file(
-    dest  => $package_file,
-    url   => $option{url},
-    cb    => $option{cb},
-    force => $option{force},
+    dest        => $package_file,
+    url         => $option{url},
+    cb          => $option{cb},
+    force       => $option{force},
+    update_file => $option{update_file},
   );
 }
 
@@ -193,14 +198,38 @@ sub _download_binary_file {
         optional => 1,
       },
       force => {
-        type => BOOLEAN
-      }
+        type     => BOOLEAN,
+        optional => 1,
+      },
+      update_file => {
+        type     => BOOLEAN,
+        optional => 1,
+      },
     }
   );
 
   $self->app->logger->debug("Downloading: $option{url} -> $option{dest}");
 
   mkpath( dirname( $option{dest} ) ) if ( !-d dirname $option{dest} );
+
+  if ( exists $option{cb}
+    && ref $option{cb} eq "CODE"
+    && $option{update_file}
+    && -f $option{dest} )
+  {
+    eval {
+      $option{cb}->( $option{dest} );
+      1;
+    } or do {
+
+      # if callback is failing, we need to download the file once again.
+      # so just set force to true
+      $self->app->logger->debug(
+        "Setting option force -> 1: update_file is enabled and callback failed."
+      );
+      $option{force} = 1;
+    };
+  }
 
   if ( -f $option{dest} && !$option{force} ) {
     $self->app->logger->debug("Skipping $option{url}. File already exists.");
@@ -233,7 +262,8 @@ sub _download_binary_file {
     confess "Error downloading $option{url}.";
   }
 
-  $option{cb}->( $option{dest} ) if ( exists $option{cb} && $option{cb} );
+  $option{cb}->( $option{dest} )
+    if ( exists $option{cb} && ref $option{cb} eq "CODE" );
 }
 
 sub add_file_to_repo {

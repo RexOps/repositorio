@@ -70,10 +70,28 @@ sub parse_cli_option {
       "Going to mirror " . $option{repo} . ". This may take a while." );
     print "\n";
 
+    my $update_files = 0;
+
+    # if metadata should be updates, also update files
+    if ( exists $option{"update-metadata"} && $option{"update-metadata"} ) {
+      $update_files = 1;
+    }
+
+    if ( exists $option{"update-files"} && $option{"update-files"} ) {
+      $update_files = 1;
+    }
+
+   # no-update-files overwrites all previous options.
+   # so it is possible to only update metadata. (for example: for proxy support)
+    if ( exists $option{"no-update-files"} && $option{"no-update-files"} ) {
+      $update_files = 0;
+    }
+
     $self->mirror(
       repo            => $option{repo},
-      update_metadata => $option{"update-metadata"},
-      update_files    => $option{"update-files"},
+      update_metadata => ( $option{"update-metadata"} || 0 ),
+      update_files    => $update_files,
+      force           => ( $option{"force-download"} || 0 ),
     );
 
     print "\n";
@@ -350,6 +368,10 @@ sub mirror {
         type     => BOOLEAN,
         optional => 1,
       },
+      force => {
+        type     => BOOLEAN,
+        optional => 1,
+      },
     }
   );
 
@@ -374,7 +396,8 @@ sub mirror {
 
     $repo_o->mirror(
       update_metadata => $option{update_metadata},
-      update_files    => $option{update_files}
+      update_files    => $option{update_files},
+      force           => $option{force},
     );
   }
 }
@@ -524,6 +547,8 @@ sub _help {
     "--repo=reponame     the name of the repository to use",
     "--update-metadata   update the metadata of a repository",
     "--update-files      download files even if they are already downloaded",
+    "--force-download    force the download of already downloaded files",
+    "--no-update-files   do not download packages",
     "--init              initialize an empty repository",
     "--add-file=file     add a file to a repository (needs --repo)",
     "--remove-file=file  remove a file from a repository (needs --repo)",

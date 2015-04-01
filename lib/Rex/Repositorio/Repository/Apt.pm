@@ -105,70 +105,27 @@ sub mirror {
   ##############################################################################
   # download packages
   ##############################################################################
-  my @components;
-  if ( exists $self->repo->{components} ) {
-    @components = split /, ?/, $self->repo->{components};
-  }
-  else {
-    @components = ( $self->repo->{component} );
-  }
-  for my $component (@components) {
+  if ( $option{update_files} || $option{force} ) {
 
-    my $local_components_path =
-      $self->app->get_repo_dir( repo => $self->repo->{name} )
-      . "/dists/$dist/$component";
-
-    for my $arch (@archs) {
-      $self->app->logger->debug("Processing ($name, $component) $dist / $arch");
-
-      my $local_packages_path =
-        $local_components_path . "/binary-$arch/Packages.gz";
-
-      $self->app->logger->debug("Reading: $local_packages_path");
-      my $content     = $self->gunzip( io($local_packages_path)->binary->all );
-      my $package_ref = $self->_parse_debian_package_file($content);
-
-      print "\n";
-      print "\n";
-      $pr = $self->app->progress_bar(
-        title  => "Downloading packages for $component ($arch)...",
-        length => scalar( @{$package_ref} ),
-      );
-      my $pi = 0;
-
-      for my $package ( @{$package_ref} ) {
-        $pi++;
-        $pr->update($pi);
-        my $package_url  = $self->repo->{url} . "/" . $package->{Filename};
-        my $package_name = $package->{Package};
-
-        my $local_file = $self->repo->{local} . "/" . $package->{Filename};
-        $self->download_package(
-          url  => $package_url,
-          name => $package_name,
-          dest => $local_file,
-          cb   => sub {
-            $self->_checksum( @_, "sha1",
-              ( $package->{SHA1} || $package->{SHA1Sum} ) );
-          },
-          force => $option{update_files}
-        );
-      }
+    my @components;
+    if ( exists $self->repo->{components} ) {
+      @components = split /, ?/, $self->repo->{components};
     }
+    else {
+      @components = ( $self->repo->{component} );
+    }
+    for my $component (@components) {
 
-    if ( exists $self->repo->{images} && $self->repo->{images} eq "true" ) {
+      my $local_components_path =
+        $self->app->get_repo_dir( repo => $self->repo->{name} )
+        . "/dists/$dist/$component";
 
-      # installer components
       for my $arch (@archs) {
-
-        next if ( "\L$arch" eq "all" );
-        next if ( "\L$component" ne "main" );
-
         $self->app->logger->debug(
-          "Processing installer ($name, $component) $dist / $arch");
+          "Processing ($name, $component) $dist / $arch");
 
         my $local_packages_path =
-          $local_components_path . "/debian-installer/binary-$arch/Packages.gz";
+          $local_components_path . "/binary-$arch/Packages.gz";
 
         $self->app->logger->debug("Reading: $local_packages_path");
         my $content = $self->gunzip( io($local_packages_path)->binary->all );
@@ -177,7 +134,7 @@ sub mirror {
         print "\n";
         print "\n";
         $pr = $self->app->progress_bar(
-          title  => "Downloading installer packages for $component ($arch)...",
+          title  => "Downloading packages for $component ($arch)...",
           length => scalar( @{$package_ref} ),
         );
         my $pi = 0;
@@ -197,50 +154,98 @@ sub mirror {
               $self->_checksum( @_, "sha1",
                 ( $package->{SHA1} || $package->{SHA1Sum} ) );
             },
-            force => $option{update_files}
+            force       => $option{force},
+            update_file => $option{update_files},
           );
         }
+      }
 
-        my $local_file_path =
-          $local_components_path . "/installer-$arch/current/images";
-        my $file_ref =
-          $self->_parse_sha256sum_file( $local_file_path . "/SHA256SUMS" );
+      if ( exists $self->repo->{images} && $self->repo->{images} eq "true" ) {
 
-        print "\n";
-        print "\n";
-        $pr = $self->app->progress_bar(
-          title =>
-            "Downloading installer image files for $component ($arch)...",
-          length => scalar( @{$package_ref} ),
-        );
-        my $fi = 0;
+        # installer components
+        for my $arch (@archs) {
 
-        for my $file ( @{$file_ref} ) {
-          $fi++;
-          $pr->update($fi);
-          my $file_url =
-              $self->repo->{url}
-            . "/dists/$dist/$component/installer-$arch/current/images/"
-            . $file->{file};
-          my $file_name = $file->{file};
+          next if ( "\L$arch" eq "all" );
+          next if ( "\L$component" ne "main" );
 
-          my $local_file = File::Spec->catfile( $self->repo->{local},
-            "dists", $dist, $component, "installer-$arch", "current", "images",
-            $file->{file} );
-          $self->download_package(
-            url  => $file_url,
-            name => $file_name,
-            dest => $local_file,
-            cb   => sub {
-              $self->_checksum( @_, "sha256", $file->{sha256} );
-            },
-            force => $option{update_files}
+          $self->app->logger->debug(
+            "Processing installer ($name, $component) $dist / $arch");
+
+          my $local_packages_path =
+            $local_components_path
+            . "/debian-installer/binary-$arch/Packages.gz";
+
+          $self->app->logger->debug("Reading: $local_packages_path");
+          my $content = $self->gunzip( io($local_packages_path)->binary->all );
+          my $package_ref = $self->_parse_debian_package_file($content);
+
+          print "\n";
+          print "\n";
+          $pr = $self->app->progress_bar(
+            title => "Downloading installer packages for $component ($arch)...",
+            length => scalar( @{$package_ref} ),
           );
+          my $pi = 0;
+
+          for my $package ( @{$package_ref} ) {
+            $pi++;
+            $pr->update($pi);
+            my $package_url  = $self->repo->{url} . "/" . $package->{Filename};
+            my $package_name = $package->{Package};
+
+            my $local_file = $self->repo->{local} . "/" . $package->{Filename};
+            $self->download_package(
+              url  => $package_url,
+              name => $package_name,
+              dest => $local_file,
+              cb   => sub {
+                $self->_checksum( @_, "sha1",
+                  ( $package->{SHA1} || $package->{SHA1Sum} ) );
+              },
+              force => $option{update_files}
+            );
+          }
+
+          my $local_file_path =
+            $local_components_path . "/installer-$arch/current/images";
+          my $file_ref =
+            $self->_parse_sha256sum_file( $local_file_path . "/SHA256SUMS" );
+
+          print "\n";
+          print "\n";
+          $pr = $self->app->progress_bar(
+            title =>
+              "Downloading installer image files for $component ($arch)...",
+            length => scalar( @{$package_ref} ),
+          );
+          my $fi = 0;
+
+          for my $file ( @{$file_ref} ) {
+            $fi++;
+            $pr->update($fi);
+            my $file_url =
+                $self->repo->{url}
+              . "/dists/$dist/$component/installer-$arch/current/images/"
+              . $file->{file};
+            my $file_name = $file->{file};
+
+            my $local_file = File::Spec->catfile( $self->repo->{local},
+              "dists", $dist, $component, "installer-$arch", "current",
+              "images", $file->{file} );
+            $self->download_package(
+              url  => $file_url,
+              name => $file_name,
+              dest => $local_file,
+              cb   => sub {
+                $self->_checksum( @_, "sha256", $file->{sha256} );
+              },
+              force => $option{update_files}
+            );
+          }
         }
       }
     }
   }
-
   ##############################################################################
   # download rest of metadata
   ##############################################################################

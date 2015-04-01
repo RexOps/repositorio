@@ -73,7 +73,8 @@ sub mirror {
       dest => $local_file,
       cb   => sub {
       },
-      force => $option{update_files}
+      force       => $option{force},
+      update_file => $option{update_files},
     );
   }
 }

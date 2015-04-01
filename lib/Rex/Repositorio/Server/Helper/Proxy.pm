@@ -2,7 +2,7 @@ package Rex::Repositorio::Server::Helper::Proxy;
 
 use base 'Mojolicious::Plugin';
 
-our $VERSION = '0.6';
+# VERSION
 
 sub register {
   my ( $self, $app ) = @_;

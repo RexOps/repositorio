@@ -133,6 +133,10 @@ sub mirror {
 sub _download_packages {
   my ( $self, $_option, @packages ) = @_;
 
+  if ( !$_option->{update_files} && !$_option->{force} ) {
+    return;
+  }
+
   my %option = %{$_option};
 
   my $i = 0;
@@ -162,7 +166,8 @@ sub _download_packages {
           $package->{checksum}->{data}
         );
       },
-      force => $option{update_files}
+      update_file => $option{update_files},
+      force       => $option{force},
     );
   }
 }
