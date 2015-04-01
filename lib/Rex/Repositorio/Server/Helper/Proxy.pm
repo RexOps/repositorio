@@ -12,7 +12,10 @@ sub register {
       my $c   = shift;
       my $url = Mojo::URL->new(shift);
       my $cb  = shift || sub { };
+      $c->inactivity_timeout(900); 
+
       my $ua  = $c->ua;
+
       if ( $c->repo->{ca} ) {
         $ua->ca( $c->repo->{ca} );
       }
