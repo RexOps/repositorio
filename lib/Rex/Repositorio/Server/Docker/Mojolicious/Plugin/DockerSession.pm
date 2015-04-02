@@ -42,6 +42,7 @@ sub register {
             $self->stash( "session_token",         $session_id );
             $self->stash( "session_user",          $ref->{user} );
             $self->stash( "session_authenticated", 1 );
+            $self->stash( "upstream_docker_token", $ref->{upstream_docker_token} );
           }
         }
       }
@@ -65,7 +66,8 @@ sub register {
         print $fh encode_json(
           {
             token => $self->stash->{session_token},
-            user  => $self->stash->{session_user}
+            user  => $self->stash->{session_user},
+            upstream_docker_token => $self->stash->{'upstream_docker_token'} || '',
           }
         );
         close($fh);

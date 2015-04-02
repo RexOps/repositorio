@@ -23,6 +23,7 @@ sub startup {
   );
 
   $self->plugin("Rex::Repositorio::Server::Helper::RenderFile");
+  $self->plugin("Rex::Repositorio::Server::Helper::Proxy");
   $self->plugin(
     "Rex::Repositorio::Server::Docker::Mojolicious::Plugin::DockerSession");
 
