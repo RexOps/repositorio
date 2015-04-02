@@ -44,7 +44,7 @@ sub register {
         );
       }
       else {
-        my $tx = $ua->get( $url, $headers );
+        my $tx = $ua->get($url, $headers);
         _proxy_tx( $c, $tx, $cb, $filter );
       }
     }
@@ -54,7 +54,8 @@ sub register {
 sub _proxy_tx {
   my ( $self, $tx, $cb, $filter ) = @_;
   if ( my $res = $tx->success ) {
-    if ( ref $filter eq "CODE" ) {
+    $self->app->log->debug("GOT tx->success");
+    if ($filter) {
       $filter->( $self, $tx );
     }
 
