@@ -15,6 +15,12 @@ sub register {
       my $filter  = shift;
       my $headers = shift || {};
 
+      if ( $c->repo->{proxy} ne "true" ) {
+        $c->app->log->debug("No proxy support for this repository.");
+        $c->render( text => 'no proxy support', status => 500 );
+        return;
+      }
+
       $c->inactivity_timeout(900);
 
       my $ua = $c->ua;
@@ -66,6 +72,12 @@ sub _proxy_tx {
     my $error = $tx->error;
     $self->tx->res->headers->add( 'X-Remote-Status',
       $error->{code} . ': ' . $error->{message} );
+    $self->app->log->error( "Error during proxy request: ("
+        . $error->{code} . ") "
+        . $error->{message}
+        . " [url: "
+        . $tx->req->url
+        . "]" );
     $self->render( status => 500, text => 'Failed to fetch data from backend' );
   }
 }

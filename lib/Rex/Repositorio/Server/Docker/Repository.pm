@@ -69,6 +69,12 @@ sub get_repo_images {
             or die($!);
           print $image_ep $tx->res->headers->header('R-Docker-Endpoints');
           close $image_ep;
+
+          open my $image_lib, '>',
+            File::Spec->catfile( $image_dir, 'library.data' )
+            or die($!);
+          print $image_lib $orig_file_url;
+          close $image_lib;
         }
 
         open my $ep, '>', "$repo_file.endpoint" or die($!);

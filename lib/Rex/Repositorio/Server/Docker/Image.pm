@@ -13,6 +13,7 @@ use File::Path;
 use File::Basename 'basename';
 require IO::All;
 use JSON::XS;
+use MIME::Base64;
 
 # VERSION
 
@@ -115,6 +116,7 @@ sub get_image_ancestry {
     $self->render( json => \@ids );
   }
   else {
+    $self->_auth_upstream();
     my $upstream_file = File::Spec->catfile( $image_dir, "endpoint.data" );
     $self->app->log->debug("Looking for upstream file: $upstream_file");
     if ( -f $upstream_file ) {
@@ -130,11 +132,12 @@ sub get_image_ancestry {
         $c->app->log->debug("Got data from upstream...");
         $c->app->log->debug("Writing ancestry (parent) file: $parent_id_file");
         my $ref = $tx->res->json;
-        my @ids = @{ $ref };
+        my @ids = @{$ref};
         shift @ids; # first one is the directory itself.
         my $child_dir = File::Spec->catfile( $image_dir, "parent" );
-        for my $parent_id ( @ids ) {
-          my $link_target = File::Spec->catdir( $repo_dir, "images", $parent_id );
+        for my $parent_id (@ids) {
+          my $link_target =
+            File::Spec->catdir( $repo_dir, "images", $parent_id );
           my $link_name = $child_dir;
           symlink $link_target, $link_name;
 
@@ -142,7 +145,7 @@ sub get_image_ancestry {
         }
       },
       sub {
-        my ($c, $tx) = @_;
+        my ( $c, $tx ) = @_;
         $self->_fix_docker_headers($tx);
       },
       {
@@ -178,6 +181,7 @@ sub get_image_layer {
     $self->render_file( filepath => $layer_file );
   }
   else {
+    $self->_auth_upstream();
     my $upstream_file = File::Spec->catfile( $image_dir, "endpoint.data" );
     $self->app->log->debug("Looking for upstream file: $upstream_file");
     if ( -f $upstream_file ) {
@@ -198,7 +202,7 @@ sub get_image_layer {
         close $fh;
       },
       sub {
-        my ($c, $tx) = @_;
+        my ( $c, $tx ) = @_;
         $self->_fix_docker_headers($tx);
       },
       {
@@ -238,6 +242,7 @@ sub get_image {
     return $self->render( text => $content );
   }
   else {
+    $self->_auth_upstream();
     my $upstream_file = File::Spec->catfile( $image_dir, "endpoint.data" );
     $self->app->log->debug("Looking for upstream file: $upstream_file");
     if ( -f $upstream_file ) {
@@ -260,7 +265,7 @@ sub get_image {
         close $fh_p;
       },
       sub {
-        my ($c, $tx) = @_;
+        my ( $c, $tx ) = @_;
         $self->_fix_docker_headers($tx);
       },
       {
@@ -296,6 +301,72 @@ sub _fix_docker_headers {
   $tx->res->headers->add( 'Pragma'             => 'no-cache' );
   $tx->res->headers->add( 'Expires'            => '-1' );
 
+}
+
+sub _auth_upstream {
+  my ($self) = @_;
+  my $docker_token = $self->stash('upstream_docker_token');
+  if ($docker_token) {
+    $self->app->log->debug("Docker Token: $docker_token");
+  }
+  else {
+    $self->app->log->debug("Docker Token: no token found in session.");
+    $self->app->log->debug("Need to authenticate on upstream docker registry.");
+
+    my $repo_dir = $self->app->get_repo_dir( repo => $self->repo->{name} );
+    my $image_dir =
+      File::Spec->catdir( $repo_dir, "images", $self->param("name") );
+    my $library = File::Spec->catfile( $image_dir, "library.data" );
+    if ( !-f $library ) {
+      $self->app->log->error("Can't find upstream library url.");
+      die "Error finding upstream library url.";
+    }
+    my $registry_url = IO::All->new($library)->slurp;
+    $self->app->log->debug("Got upstream registry url: $registry_url");
+
+    my $base64_auth_string = MIME::Base64::encode_base64(
+      $self->repo->{upstream_user} . ":" . $self->repo->{upstream_password} );
+
+ # need to create a new object, so there is no cookies from proxy requests in it
+    my $ua = Mojo::UserAgent->new;
+    $ua->max_redirects(5);
+
+    if ( $self->repo->{ca} ) {
+      $ua->ca( $self->repo->{ca} );
+    }
+    if ( $self->repo->{key} ) {
+      $ua->key( $self->repo->{key} );
+    }
+    if ( $self->repo->{cert} ) {
+      $ua->cert( $self->repo->{cert} );
+    }
+
+    my $tx = $ua->get(
+      $registry_url,
+
+      { # some custom headers to get the docker token, so that we can
+         # authenticate against the image servers.
+        'X-Docker-Token' => 'true',
+        'Authorization'  => "Basic $base64_auth_string",
+      },
+
+    );
+
+    if ( $tx->success ) {
+      my $docker_token = $tx->res->headers->header('X-Docker-Token') || "";
+      if ( !$docker_token ) {
+        $self->app->log->error(
+          "Authentication successfull but can't find a token.");
+        $self->app->log->debug( Dumper($tx) );
+      }
+      $self->app->log->debug("Got my docker token: $docker_token");
+      $self->stash( 'upstream_docker_token', $docker_token );
+    }
+    else {
+      $self->app->log->error(
+        "Can't authenticate to upstream docker registry: $registry_url");
+    }
+  }
 }
 
 1;
