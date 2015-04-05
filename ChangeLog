@@ -1,3 +1,6 @@
+2015-04-06 Jan Gehring <jan.gehring, gmail.com> (1.0.0)
+  * added proxy support for docker registry
+
 2015-03-26 Jan Gehring <jan.gehring, gmail.com> (0.7.0)
   * added proxy support for linux repositories
   * added OpenSuSE mirror support
