@@ -106,7 +106,7 @@ sub mirror {
         "images/boot.iso",           "images/efiboot.img",
         "images/efidisk.img",        "images/install.img",
         "images/pxeboot/initrd.img", "images/pxeboot/vmlinuz",
-        "images/upgrade.img",
+        "images/upgrade.img",        "LiveOS/squashfs.img",
       )
       )
     {
