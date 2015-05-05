@@ -259,6 +259,7 @@ sub _download_binary_file {
   if ( !$resp->is_success ) {
     $self->app->logger->error("Can't download $option{url}.");
     $self->app->logger->error( "Status: " . $resp->status_line );
+    unlink $option{dest};
     confess "Error downloading $option{url}.";
   }
 
