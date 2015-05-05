@@ -25,6 +25,7 @@ sub register {
 
       my $ua = $c->ua;
       $ua->max_redirects(5);
+      $ua->proxy->detect;
 
       if ( $c->repo->{ca} ) {
         $ua->ca( $c->repo->{ca} );
