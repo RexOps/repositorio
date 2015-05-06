@@ -171,9 +171,30 @@ sub mirror {
           $self->app->logger->debug(
             "Processing installer ($name, $component) $dist / $arch");
 
-          my $local_packages_path =
-            $local_components_path
-            . "/debian-installer/binary-$arch/Packages.gz";
+          my $local_packages_path;
+          if (
+            -d File::Spec->catdir( $local_components_path, "debian-installer" )
+            )
+          {
+            $local_packages_path = File::Spec->catfile(
+              $local_components_path, "debian-installer",
+              "binary-$arch",         "Packages.gz"
+            );
+          }
+          elsif (
+            -d File::Spec->catdir( $local_components_path, "ubuntu-installer" )
+            )
+          {
+            $local_packages_path = File::Spec->catfile(
+              $local_components_path, "ubuntu-installer",
+              "binary-$arch",         "Packages.gz"
+            );
+          }
+          else {
+            $self->app->logger->error(
+              "Can't find Package.gz file for installer.");
+            confess "Can't find Package.gz file for installer.";
+          }
 
           $self->app->logger->debug("Reading: $local_packages_path");
           my $content = $self->gunzip( io($local_packages_path)->binary->all );
@@ -207,7 +228,36 @@ sub mirror {
           }
 
           my $local_file_path =
-            $local_components_path . "/installer-$arch/current/images";
+            File::Spec->catfile( $local_components_path, "installer-$arch",
+            "current", "images" );
+
+          $self->app->logger->debug( "Looking for SHA256SUMS file: "
+              . File::Spec->catfile( $local_file_path, "/SHA256SUMS" ) );
+          if ( !-f File::Spec->catfile( $local_file_path, "/SHA256SUMS" ) ) {
+            $self->app->logger->error(
+              "need to download SHA256SUMS file, because it was not listed in Release file"
+            );
+            my $remote_sha256sums = $local_file_path . "/SHA256SUMS";
+            my $repo_root =
+              $self->app->get_repo_dir( repo => $self->repo->{name} );
+            $self->app->logger->debug("Found repo root: $repo_root");
+            $remote_sha256sums =~ s/^\Q$repo_root\E//;
+
+            my $local_sha256sums_rel =
+              $self->repo->{local} . "/" . $remote_sha256sums;
+
+            $remote_sha256sums = $self->repo->{url} . $remote_sha256sums;
+
+            $self->app->logger->debug(
+              "sha256sums download location: $remote_sha256sums -> $local_sha256sums_rel"
+            );
+
+            $self->download_metadata(
+              url  => $remote_sha256sums,
+              dest => $local_sha256sums_rel,
+            );
+          }
+
           my $file_ref =
             $self->_parse_sha256sum_file( $local_file_path . "/SHA256SUMS" );
 
