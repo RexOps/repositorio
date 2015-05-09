@@ -1,6 +1,8 @@
-2015-05-06 Jan Gehring <jan.gehring, gmail.com> (1.1.0)
+2015-05-09 Jan Gehring <jfried, mailbox.org> (1.1.0)
   * added proxy support for embededd webserver/proxy #19
 	* download LiveOS/squashfs.img if available #20
+	* fixed problem with ubuntu images #23
+	* don't create zero size files if remote file os not available #21
 
 2015-04-06 Jan Gehring <jan.gehring, gmail.com> (1.0.0)
   * added proxy support for docker registry
