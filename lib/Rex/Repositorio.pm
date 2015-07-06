@@ -94,7 +94,8 @@ sub parse_cli_option {
     $self->tag(
       tag => $option{tag},
       clonetag => $option{clonetag} || 'head',
-      repo => $option{repo}
+      repo => $option{repo},
+      force => $option{force} || 0,
     );
   }
 
@@ -410,6 +411,9 @@ sub tag {
       clonetag => {
         type => SCALAR
       },
+      force => {
+        type => BOOLEAN
+      }
     }
   );
 
@@ -417,32 +421,46 @@ sub tag {
   my $root_dir    = $self->config->{RepositoryRoot};
   $repo_config->{local} =~ s/\/$//;
 
-  my @dirs    = ("$root_dir/$option{clonetag}/$repo_config->{local}");
-  my $tag_dir = "$root_dir/$option{tag}/$repo_config->{local}";
+  my @dirs    = ( File::Spec->catpath(undef, $root_dir, $option{clonetag}, $repo_config->{local}) );
+  my $tag_dir = File::Spec->catpath(undef, $root_dir, $option{tag}, $repo_config->{local});
+
+  $self->logger->logcroak("Unknown tag $option{clonetag} on repo $option{repo} ($dirs[0])\n")
+    unless ( -d $dirs[0] );
+
+  if ( -e $tag_dir ) {
+    if( $option{force} ) {
+      $self->logger->debug("Removing $tag_dir");
+      rmtree $tag_dir; # should be remove_tree, but will use legacy to match mkdir
+    }
+    else {
+      $self->logger->logcroak("Tag $option{tag} on repo $option{repo} already exists ($tag_dir), use --force\n");
+    }
+  }
 
   mkpath $tag_dir;
 
   for my $dir (@dirs) {
     opendir my $dh, $dir
-        or $self->logger->logcroak("Unknown tag $option{clonetag} on repo $option{repo}\n");
+        or $self->logger->logcroak("Failed to open $dir: $!\nNew tag is probably unusable\n");
     while ( my $entry = readdir $dh ) {
       next if ( $entry eq "." || $entry eq ".." );
-      my $rel_entry = "$dir/$entry";
-      $rel_entry =~ s/$root_dir\/$option{clonetag}\/$repo_config->{local}\///;
+      my $rel_entry = File::Spec->catfile($dir, $entry);
+      $rel_entry =~ s{^$dirs[0]/}{}; # TODO use File::Spec
 
-      if ( -d "$dir/$entry" ) {
-        push @dirs, "$dir/$entry";
-        $self->logger->debug("Creating directory: $tag_dir/$rel_entry.");
-        mkdir "$tag_dir/$rel_entry";
+      my $srcfile = File::Spec->catfile($dir,$entry);
+      my $dstfile = File::Spec->catfile($tag_dir,$rel_entry);
+      $self->logger->debug("Tag Src: $srcfile, Dst: $dstfile");
+
+      if ( -d $srcfile ) {
+        push @dirs, $srcfile;
+        $self->logger->debug("Creating directory: $dstfile");
+        mkdir $dstfile;
         next;
       }
 
       $self->logger->debug(
-        "Linking (hard): $dir/$entry -> $tag_dir/$rel_entry");
-      if ( -f File::Spec->catfile( $tag_dir, $rel_entry ) ) {
-        unlink File::Spec->catfile( $tag_dir, $rel_entry );
-      }
-      link "$dir/$entry", "$tag_dir/$rel_entry";
+        "Linking (hard): $srcfile -> $dstfile");
+      link $srcfile, $dstfile;
     }
     closedir $dh;
   }
