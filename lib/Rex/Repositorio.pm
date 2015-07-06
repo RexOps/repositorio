@@ -91,7 +91,11 @@ sub parse_cli_option {
   }
 
   elsif ( exists $option{tag} && exists $option{repo} ) {
-    $self->tag( tag => $option{tag}, repo => $option{repo} );
+    $self->tag(
+      tag => $option{tag},
+      clonetag => $option{clonetag} || 'head',
+      repo => $option{repo}
+    );
   }
 
   elsif ( exists $option{repo} && exists $option{"update-errata"} ) {
@@ -403,6 +407,9 @@ sub tag {
       tag => {
         type => SCALAR
       },
+      clonetag => {
+        type => SCALAR
+      },
     }
   );
 
@@ -410,17 +417,18 @@ sub tag {
   my $root_dir    = $self->config->{RepositoryRoot};
   $repo_config->{local} =~ s/\/$//;
 
-  my @dirs    = ("$root_dir/head/$repo_config->{local}");
+  my @dirs    = ("$root_dir/$option{clonetag}/$repo_config->{local}");
   my $tag_dir = "$root_dir/$option{tag}/$repo_config->{local}";
 
   mkpath $tag_dir;
 
   for my $dir (@dirs) {
-    opendir my $dh, $dir;
+    opendir my $dh, $dir
+        or $self->logger->logcroak("Unknown tag $option{clonetag} on repo $option{repo}\n");
     while ( my $entry = readdir $dh ) {
       next if ( $entry eq "." || $entry eq ".." );
       my $rel_entry = "$dir/$entry";
-      $rel_entry =~ s/$root_dir\/head\/$repo_config->{local}\///;
+      $rel_entry =~ s/$root_dir\/$option{clonetag}\/$repo_config->{local}\///;
 
       if ( -d "$dir/$entry" ) {
         push @dirs, "$dir/$entry";
@@ -668,7 +676,7 @@ I</etc/rex/repositorio.conf>.
    dist      = wheezy
    component = main
  </Repository>
- 
+
 If you want to sign your custom repositories you have to configure the gpg key to use.
 repositorio automatically exports the public key into the root of the repository, so it can be imported from the clients.
 If you don't specify the gpg password repositorio will ask you for the password.
