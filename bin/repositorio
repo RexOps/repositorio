@@ -30,7 +30,16 @@ if ( !$config_file ) {
     . join( ", ", @config_file_locations );
 }
 
-my $conf_o = Config::General->new($config_file);
+my $conf_o = Config::General->new(
+    -ConfigFile         => $config_file,
+    -UseApacheInclude   => 1,
+    -IncludeDirectories => 1,
+    -IncludeGlob        => 1,
+    -IncludeRelative    => 1,
+    -IncludeAgain       => 1,
+    -AllowMultiOptions  => 0,
+);
+
 my %conf   = $conf_o->getall;
 
 if ( !exists $conf{Log4perl} ) {
