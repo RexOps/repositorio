@@ -421,8 +421,8 @@ sub tag {
   my $root_dir    = $self->config->{RepositoryRoot};
   $repo_config->{local} =~ s/\/$//;
 
-  my @dirs    = ( File::Spec->catpath(undef, $root_dir, $option{clonetag}, $repo_config->{local}) );
-  my $tag_dir = File::Spec->catpath(undef, $root_dir, $option{tag}, $repo_config->{local});
+  my @dirs    = ( File::Spec->catdir($root_dir, $option{clonetag}, $repo_config->{local}) );
+  my $tag_dir = File::Spec->catdir($root_dir, $option{tag}, $repo_config->{local});
 
   $self->logger->logcroak("Unknown tag $option{clonetag} on repo $option{repo} ($dirs[0])\n")
     unless ( -d $dirs[0] );
