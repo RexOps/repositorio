@@ -139,8 +139,20 @@ sub download_package {
     }
   );
 
-  my $package_file =
-    $self->app->config->{RepositoryRoot} . "/head/" . $option{dest};
+  my $package_file;
+  if ($self->app->config->{TagStyle} eq 'TopDir') {
+    $package_file = File::Spec->catfile(
+      $self->app->config->{RepositoryRoot}, 'head', $option{dest});
+  }
+  elsif ($self->app->config->{TagStyle} eq 'BottomDir') {
+    # tag is inserted by caller
+    $package_file = File::Spec->catfile(
+      $self->app->config->{RepositoryRoot}, $option{dest});
+  }
+  else {
+    $self->app->logger->logcroak('Unknown TagStyle: '.$self->app->config->{TagStyle})
+  }
+
   $self->_download_binary_file(
     dest        => $package_file,
     url         => $option{url},
@@ -172,8 +184,20 @@ sub download_metadata {
     }
   );
 
-  my $metadata_file =
-    $self->app->config->{RepositoryRoot} . "/head/" . $option{dest};
+  my $metadata_file;
+  if ($self->app->config->{TagStyle} eq 'TopDir') {
+    $metadata_file = File::Spec->catdir(
+      $self->app->config->{RepositoryRoot}, 'head', $option{dest});
+  }
+  elsif ($self->app->config->{TagStyle} eq 'BottomDir') {
+    # tag is inserted by caller
+    $metadata_file = File::Spec->catfile(
+      $self->app->config->{RepositoryRoot}, $option{dest});
+  }
+  else {
+    $self->app->logger->logcroak('Unknown TagStyle: '.$self->app->config->{TagStyle})
+  }
+
   $self->_download_binary_file(
     dest  => $metadata_file,
     url   => $option{url},
@@ -282,8 +306,8 @@ sub add_file_to_repo {
   );
 
   if ( !-f $option{source} ) {
-    $self->app->logger->error("Fild $option{source} not found.");
-    confess "Fild $option{source} not found.";
+    $self->app->logger->error("File $option{source} not found.");
+    confess "File $option{source} not found.";
   }
 
   $self->app->logger->debug("Copy $option{source} -> $option{dest}");
@@ -461,7 +485,9 @@ sub update_errata {
   $self->app->logger->debug("Updating errata of type: $errata_type");
 
   my $data = $self->download("http://errata.repositor.io/$errata_type.tar.gz");
-  open( my $fh, ">", "/tmp/$errata_type.tar.gz" ) or confess($!);
+  # TODO: use File::Temp
+  my $file = File::Spec->catfile(File::Spec->tmpdir(),"$errata_type.tar.gz");
+  open( my $fh, '>', $file ) or confess($!);
   binmode $fh;
   print $fh $data;
   close($fh);
@@ -471,13 +497,13 @@ sub update_errata {
 
   mkpath $errata_dir;
 
-  system "cd $errata_dir ; tar xzf /tmp/$errata_type.tar.gz";
+  system "cd $errata_dir ; tar xzf $file"; #TODO: replace with perl
 
   if ( $? != 0 ) {
     confess "Error extracting errata database.";
   }
 
-  unlink "/tmp/$errata_type.tar.gz";
+  unlink $file;
 
   $self->app->logger->debug("Updating errata of type: $errata_type (done)");
 }

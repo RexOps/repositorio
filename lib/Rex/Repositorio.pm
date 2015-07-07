@@ -53,7 +53,15 @@ sub ua {
 sub run {
   my ( $self, %option ) = @_;
 
+  # this config checking/munging stuff should probably be in the 'has config' definition?
   $self->config->{RepositoryRoot} =~ s/\/$//;
+  $self->logger->logcroak(qq/"all" is a reserved word and cannot be used as a repo name\n/)
+    if grep { $_ eq 'all' } keys %{ $self->config->{Repository} };
+  $self->config->{TagStyle} ||= 'TopDir';
+  $self->logger->logcroak(
+    sprintf "Unknown TagStyle %s, must be TopDir or BottomDir\n", $self->config->{TagStyle} )
+    unless $self->config->{TagStyle} =~ m/^(?:Top|Bottom)Dir$/;
+
   $self->parse_cli_option(%option);
 }
 
@@ -63,6 +71,12 @@ sub parse_cli_option {
   if ( exists $option{help} ) {
     $self->_help();
     exit 0;
+  }
+
+  if ( exists $option{repo} ) {
+    $self->logger->logcroak(sprintf("Unknown repo: %s\n", $option{repo}))
+      unless $option{repo} eq 'all'
+        or $self->config->{Repository}->{ $option{repo} };
   }
 
   if ( exists $option{mirror} && exists $option{repo} ) {
@@ -421,8 +435,21 @@ sub tag {
   my $root_dir    = $self->config->{RepositoryRoot};
   $repo_config->{local} =~ s/\/$//;
 
-  my @dirs    = ( File::Spec->catdir($root_dir, $option{clonetag}, $repo_config->{local}) );
-  my $tag_dir = File::Spec->catdir($root_dir, $option{tag}, $repo_config->{local});
+  my (@dirs, $tag_dir);
+
+  # should probably use get_repo_dir ?
+  if ($self->config->{TagStyle} eq 'TopDir') {
+    push @dirs, File::Spec->catdir($root_dir, $option{clonetag}, $repo_config->{local});
+    $tag_dir = File::Spec->catdir($root_dir, $option{tag}, $repo_config->{local});
+  }
+  elsif ($self->config->{TagStyle} eq 'BottomDir') {
+    push @dirs, File::Spec->catdir($root_dir, $repo_config->{local}, $option{clonetag});
+    $tag_dir = File::Spec->catdir($root_dir, $repo_config->{local}, $option{tag});
+  }
+  else {
+    # add other styles here
+    $self->logger->logcroak('Shouldnt have gotten here');
+  }
 
   $self->logger->logcroak("Unknown tag $option{clonetag} on repo $option{repo} ($dirs[0])\n")
     unless ( -d $dirs[0] );
@@ -443,9 +470,9 @@ sub tag {
     opendir my $dh, $dir
         or $self->logger->logcroak("Failed to open $dir: $!\nNew tag is probably unusable\n");
     while ( my $entry = readdir $dh ) {
-      next if ( $entry eq "." || $entry eq ".." );
+      next if ( $entry eq '.' || $entry eq '..' );
       my $rel_entry = File::Spec->catfile($dir, $entry);
-      $rel_entry =~ s{^$dirs[0]/}{}; # TODO use File::Spec
+      $rel_entry =~ s{^$dirs[0]/}{}; # TODO use File::Spec?
 
       my $srcfile = File::Spec->catfile($dir,$entry);
       my $dstfile = File::Spec->catfile($tag_dir,$rel_entry);
@@ -480,9 +507,21 @@ sub get_errata_dir {
     }
   );
 
-  return File::Spec->catdir(
-    File::Spec->rel2abs( $self->config->{RepositoryRoot} ),
-    $option{tag}, $option{repo}, "errata" );
+  if ($self->config->{TagStyle} eq 'TopDir') {
+    return File::Spec->catdir(
+      File::Spec->rel2abs( $self->config->{RepositoryRoot} ),
+      $option{tag}, $option{repo}, 'errata' );
+  }
+  elsif ($self->config->{TagStyle} eq 'BottomDir') {
+    return File::Spec->catdir(
+      File::Spec->rel2abs( $self->config->{RepositoryRoot} ),
+      $option{repo}, $option{tag}, 'errata' );
+  }
+  else {
+    # add other styles here
+    $self->logger->logcroak('Shouldnt have gotten here');
+  }
+
 }
 
 sub get_repo_dir {
@@ -496,9 +535,21 @@ sub get_repo_dir {
     }
   );
 
-  return File::Spec->rel2abs( $self->config->{RepositoryRoot}
-      . "/head/"
-      . $self->config->{Repository}->{ $option{repo} }->{local} );
+  if ($self->config->{TagStyle} eq 'TopDir') {
+    return File::Spec->catdir(
+      File::Spec->rel2abs( $self->config->{RepositoryRoot} ),
+      'head', $option{repo});
+  }
+  elsif ($self->config->{TagStyle} eq 'BottomDir') {
+    return File::Spec->catdir(
+      File::Spec->rel2abs( $self->config->{RepositoryRoot} ),
+      $option{repo}, 'head');
+  }
+  else {
+    # add other styles here
+    $self->logger->logcroak('Shouldnt have gotten here');
+  }
+
 }
 
 sub progress_bar {
@@ -558,8 +609,9 @@ sub _help {
   my ($self) = @_;
 
   $self->_print(
-    "--mirror            mirror a configured repository (needs --repo)",
+    "--mirror            mirror a configured repository (needs --repo, use \"all\" for all repos)",
     "--tag=tagname       tag a repository (needs --repo)",
+    "--clonetag=tagname  clones a tag in a repository (needs --repo and new --tag)",
     "--repo=reponame     the name of the repository to use",
     "--update-metadata   update the metadata of a repository",
     "--update-files      download files even if they are already downloaded",
@@ -617,9 +669,11 @@ create consistant installations of your server.
 
 =over 4
 
-=item --mirror            mirror a configured repository (needs --repo)
+=item --mirror            mirror a configured repository (needs --repo, use "all" for all repos)
 
 =item --tag=tagname       tag a repository (needs --repo)
+
+=item --clonetag=tagname  clones a tag in a repository (needs --repo and new --tag)
 
 =item --repo=reponame     the name of the repository to use
 
@@ -656,6 +710,8 @@ create consistant installations of your server.
 To configure repositor.io create a configuration file
 I</etc/rex/repositorio.conf>.
  RepositoryRoot = /srv/html/repo/
+
+ TagStyle = TopDir
 
  # log4perl configuration file
  <Log4perl>

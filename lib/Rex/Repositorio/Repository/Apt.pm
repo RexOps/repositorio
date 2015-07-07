@@ -45,19 +45,33 @@ sub mirror {
     length => 2,
   );
 
+  my $destbase;
+
+  # this should probably be replaced by get_repo_dir
+  if ($self->app->config->{TagStyle} eq 'TopDir') {
+    $destbase = $self->repo->{local};
+  }
+  elsif ($self->app->config->{TagStyle} eq 'BottomDir') {
+    $destbase = File::Spec->catdir($self->repo->{local},'head');
+  }
+  else {
+    # add new tagstyles here
+    $self->app->logger->logcroak('Unknown TagStyle: '.$self->app->config->{TagStyle});
+  }
+
   # try download Release and Release.gpg
   try {
     $self->download_metadata(
-      url   => $url . "/Release",
-      dest  => $self->repo->{local} . "/dists/$dist/Release",
+      url   => $url . '/Release',
+      dest  => File::Spec->catfile($destbase,'dists',$dist,'Release'),
       force => $option{update_metadata},
     );
 
     $pr->update(1);
 
     $self->download_metadata(
-      url   => $url . "/Release.gpg",
-      dest  => $self->repo->{local} . "/dists/$dist/Release.gpg",
+      url   => $url . '/Release.gpg',
+      dest  => File::Spec->catfile($destbase,'dists', $dist, 'Release.gpg'),
       force => $option{update_metadata},
     );
 
@@ -91,7 +105,7 @@ sub mirror {
     try {
       $self->download_metadata(
         url   => $file_url,
-        dest  => $self->repo->{local} . "/dists/$dist/$file",
+        dest  => File::Spec->catfile($destbase,'dists',$dist,$file),
         force => $option{update_metadata},
       );
     }
@@ -116,16 +130,16 @@ sub mirror {
     }
     for my $component (@components) {
 
-      my $local_components_path =
-        $self->app->get_repo_dir( repo => $self->repo->{name} )
-        . "/dists/$dist/$component";
+      my $local_components_path = File::Spec->catdir(
+        $self->app->get_repo_dir( repo => $self->repo->{name} ),
+        'dists',$dist,$component);
 
       for my $arch (@archs) {
         $self->app->logger->debug(
           "Processing ($name, $component) $dist / $arch");
 
-        my $local_packages_path =
-          $local_components_path . "/binary-$arch/Packages.gz";
+        my $local_packages_path = File::Spec->catfile(
+          $local_components_path, "binary-$arch", 'Packages.gz');
 
         $self->app->logger->debug("Reading: $local_packages_path");
         my $content = $self->gunzip( io($local_packages_path)->binary->all );
@@ -145,7 +159,7 @@ sub mirror {
           my $package_url  = $self->repo->{url} . "/" . $package->{Filename};
           my $package_name = $package->{Package};
 
-          my $local_file = $self->repo->{local} . "/" . $package->{Filename};
+          my $local_file = File::Spec->catfile($destbase,$package->{Filename});
           $self->download_package(
             url  => $package_url,
             name => $package_name,
@@ -214,7 +228,7 @@ sub mirror {
             my $package_url  = $self->repo->{url} . "/" . $package->{Filename};
             my $package_name = $package->{Package};
 
-            my $local_file = $self->repo->{local} . "/" . $package->{Filename};
+            my $local_file = File::Spec->catfile($destbase,$package->{Filename});
             $self->download_package(
               url  => $package_url,
               name => $package_name,
@@ -232,8 +246,8 @@ sub mirror {
             "current", "images" );
 
           $self->app->logger->debug( "Looking for SHA256SUMS file: "
-              . File::Spec->catfile( $local_file_path, "/SHA256SUMS" ) );
-          if ( !-f File::Spec->catfile( $local_file_path, "/SHA256SUMS" ) ) {
+              . File::Spec->catfile( $local_file_path, "SHA256SUMS" ) );
+          if ( !-f File::Spec->catfile( $local_file_path, "SHA256SUMS" ) ) {
             $self->app->logger->error(
               "need to download SHA256SUMS file, because it was not listed in Release file"
             );
@@ -243,8 +257,8 @@ sub mirror {
             $self->app->logger->debug("Found repo root: $repo_root");
             $remote_sha256sums =~ s/^\Q$repo_root\E//;
 
-            my $local_sha256sums_rel =
-              $self->repo->{local} . "/" . $remote_sha256sums;
+            my $local_sha256sums_rel = File::Spec->catfile(
+              $destbase, $remote_sha256sums);
 
             $remote_sha256sums = $self->repo->{url} . $remote_sha256sums;
 
@@ -259,7 +273,7 @@ sub mirror {
           }
 
           my $file_ref =
-            $self->_parse_sha256sum_file( $local_file_path . "/SHA256SUMS" );
+            $self->_parse_sha256sum_file( File::Spec->catfile($local_file_path, 'SHA256SUMS' ));
 
           print "\n";
           print "\n";
@@ -318,7 +332,7 @@ sub mirror {
       try {
         $self->download_metadata(
           url   => $file_url,
-          dest  => $self->repo->{local} . "/dists/$dist/$file",
+          dest  => File::Spec->catfile($destbase,'dists',$dist,$file),
           force => $option{update_metadata},
         );
       }
@@ -430,12 +444,9 @@ sub init {
   my $desc      = $self->repo->{description} || "$component repository";
 
   my $repo_dir = $self->app->get_repo_dir( repo => $self->repo->{name} );
-  mkpath "$repo_dir/dists/$dist/$component/binary-$arch";
 
-  my $pool_dir = $self->app->get_repo_dir( repo => $self->repo->{name} ) . "/"
-    . "pool/$dist/$component/";
-
-  mkpath $pool_dir;
+  mkpath File::Spec->catdir($repo_dir,'dists',$dist,$component,"binary-$arch");
+  mkpath File::Spec->catdir($repo_dir,'pool',$dist,$component);
 
   my $aptftp      = io("$repo_dir/aptftp.conf");
   my $aptgenerate = io("$repo_dir/aptgenerate.conf");
@@ -491,10 +502,9 @@ sub add_file {
   my $dist      = $self->repo->{dist};
   my $component = $self->repo->{component};
 
-  my $dest =
-      $self->app->get_repo_dir( repo => $self->repo->{name} ) . "/"
-    . "pool/$dist/$component/"
-    . basename( $option{file} );
+  my $dest = File::Spec->catdir(
+      $self->app->get_repo_dir( repo => $self->repo->{name} ),
+     'pool',$dist,$component,basename( $option{file} ));
 
   $self->add_file_to_repo( source => $option{file}, dest => $dest );
 
@@ -516,10 +526,9 @@ sub remove_file {
   my $dist      = $self->repo->{dist};
   my $component = $self->repo->{component};
 
-  my $file =
-      $self->app->get_repo_dir( repo => $self->repo->{name} ) . "/"
-    . "pool/$dist/$component/"
-    . basename( $option{file} );
+  my $file = File::Spec->catdir(
+      $self->app->get_repo_dir( repo => $self->repo->{name} ),
+     'pool',$dist,$component,basename( $option{file} ));
 
   $self->remove_file_from_repo( file => $file );
 
@@ -531,6 +540,8 @@ sub _run_ftp_archive {
 
   my $dist = $self->repo->{dist};
   my $repo_dir = $self->app->get_repo_dir( repo => $self->repo->{name} );
+
+  # TODO: should probably check that apt-ftparchive exists and is executable
 
   system
     "cd $repo_dir ; apt-ftparchive generate -c=aptftp.conf aptgenerate.conf";

@@ -37,18 +37,35 @@ sub mirror {
   ( $packages_ref, $repomd_ref ) = $self->_get_repomd_xml( $self->repo->{url} );
   my @packages = @{$packages_ref};
 
+  my $url = $self->repo->{url} . "/repodata/repomd.xml";
+  my $destbase;
+
+  # this should probably be replaced by get_repo_dir
+  if ($self->app->config->{TagStyle} eq 'TopDir') {
+    $destbase = $self->repo->{local};
+  }
+  elsif ($self->app->config->{TagStyle} eq 'BottomDir') {
+    $destbase = File::Spec->catdir($self->repo->{local},'head');
+  }
+  else {
+    # add new tagstyles here
+    $self->app->logger->logcroak('Unknown TagStyle: '.$self->app->config->{TagStyle});
+  }
+
+  my $repodatabase = File::Spec->catfile( $destbase, 'repodata' );
+
   try {
     $self->download_metadata(
-      url   => $self->repo->{url} . "/repodata/repomd.xml",
-      dest  => $self->repo->{local} . "/repodata/repomd.xml",
+      url   => $url,
+      dest  => File::Spec->catfile($repodatabase,'repomd.xml'),
       force => $option{update_metadata},
     );
 
     $pr->update(2);
 
     $self->download_metadata(
-      url   => $self->repo->{url} . "/repodata/repomd.xml.asc",
-      dest  => $self->repo->{local} . "/repodata/repomd.xml.asc",
+      url   => $url,
+      dest  => File::Spec->catfile($repodatabase,'repomd.xml'),
       force => $option{update_metadata},
     );
 
@@ -79,7 +96,7 @@ sub mirror {
 
     $self->download_metadata(
       url  => $file_url,
-      dest => $self->repo->{local} . "/repodata/$file",
+      dest => File::Spec->catfile($repodatabase,$file),
       cb   => sub {
         $self->_checksum(
           @_,
@@ -114,7 +131,7 @@ sub mirror {
       $pr->update($ii);
 
       my $file_url   = $self->repo->{url} . "/" . $file;
-      my $local_file = $self->repo->{local} . "/" . $file;
+      my $local_file = File::Spec->catfile($destbase, $file);
       try {
         $self->download_package(
           url  => $file_url,
@@ -147,6 +164,20 @@ sub _download_packages {
     length => scalar(@packages),
   );
 
+  my $destbase;
+
+  # this should probably be replaced by get_repo_dir
+  if ($self->app->config->{TagStyle} eq 'TopDir') {
+    $destbase = $self->repo->{local};
+  }
+  elsif ($self->app->config->{TagStyle} eq 'BottomDir') {
+    $destbase = File::Spec->catdir($self->repo->{local},'head');
+  }
+  else {
+    # add new tagstyles here
+    $self->app->logger->logcroak('Unknown TagStyle: '.$self->app->config->{TagStyle});
+  }
+
   for my $package (@packages) {
     $i++;
     $pr->update($i);
@@ -154,7 +185,7 @@ sub _download_packages {
     my $package_url  = $self->repo->{url} . "/" . $package->{location};
     my $package_name = $package->{name};
 
-    my $local_file = $self->repo->{local} . "/" . $package->{location};
+    my $local_file = File::Spec->catfile($destbase,$package->{location});
     $self->download_package(
       url  => $package_url,
       name => $package_name,
@@ -212,7 +243,7 @@ sub init {
   my $self = shift;
 
   my $repo_dir = $self->app->get_repo_dir( repo => $self->repo->{name} );
-  mkpath "$repo_dir/repodata";
+  mkpath File::Spec->catdir($repo_dir, 'repodata');
 
   $self->_run_createrepo();
 }
@@ -228,8 +259,8 @@ sub add_file {
     }
   );
 
-  my $dest = $self->app->get_repo_dir( repo => $self->repo->{name} ) . "/"
-    . basename( $option{file} );
+  my $dest = File::Spec->catfile($self->app->get_repo_dir(
+      repo => $self->repo->{name}), basename( $option{file} ));
 
   $self->add_file_to_repo( source => $option{file}, dest => $dest );
 
@@ -248,8 +279,8 @@ sub remove_file {
     }
   );
 
-  my $file = $self->app->get_repo_dir( repo => $self->repo->{name} ) . "/"
-    . basename( $option{file} );
+  my $file = File::Spec->catfile($self->app->get_repo_dir(
+      repo => $self->repo->{name}), basename( $option{file} ));
 
   $self->remove_file_from_repo( file => $file );
 
@@ -262,7 +293,7 @@ sub _run_createrepo {
   my $repo_dir = $self->app->get_repo_dir( repo => $self->repo->{name} );
 
   if ( exists $self->repo->{gpg} && $self->repo->{gpg}->{key} ) {
-    unlink "$repo_dir/repodata/repomd.xml.asc";
+    unlink File::Spec->catfile($repo_dir, qw/ repodata repomd.xml.asc /);
   }
 
   system "cd $repo_dir ; createrepo .";
