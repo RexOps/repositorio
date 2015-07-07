@@ -101,7 +101,7 @@ create consistant installations of your server.
 
 =over 4
 
-=item --mirror            mirror a configured repository (needs --repo)
+=item --mirror            mirror a configured repository (needs --repo, use "all" for all repos)
 
 =item --tag=tagname       tag a repository (needs --repo)
 
