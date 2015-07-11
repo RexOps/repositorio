@@ -53,7 +53,7 @@ GetOptions(
   "force-download",
   "list",      "add-file=s",      "remove-file=s", "init",
   "server",    "errata",          "update-errata", "package=s",
-  "version=s", "arch=s",
+  "version=s", "arch=s",          "clonetag=s",    "force"
 );
 
 my $app = Rex::Repositorio->new( config => \%conf, logger => $logger );
@@ -95,6 +95,8 @@ create consistant installations of your server.
 =item --mirror            mirror a configured repository (needs --repo)
 
 =item --tag=tagname       tag a repository (needs --repo)
+
+=item --clonetag=tagname  clones a tag in a repository (needs --repo and new  --tag)
 
 =item --repo=reponame     the name of the repository to use
 

@@ -91,7 +91,12 @@ sub parse_cli_option {
   }
 
   elsif ( exists $option{tag} && exists $option{repo} ) {
-    $self->tag( tag => $option{tag}, repo => $option{repo} );
+    $self->tag(
+      tag => $option{tag},
+      clonetag => $option{clonetag} || 'head',
+      repo => $option{repo},
+      force => $option{force} || 0,
+    );
   }
 
   elsif ( exists $option{repo} && exists $option{"update-errata"} ) {
@@ -403,6 +408,12 @@ sub tag {
       tag => {
         type => SCALAR
       },
+      clonetag => {
+        type => SCALAR
+      },
+      force => {
+        type => BOOLEAN
+      }
     }
   );
 
@@ -410,31 +421,46 @@ sub tag {
   my $root_dir    = $self->config->{RepositoryRoot};
   $repo_config->{local} =~ s/\/$//;
 
-  my @dirs    = ("$root_dir/head/$repo_config->{local}");
-  my $tag_dir = "$root_dir/$option{tag}/$repo_config->{local}";
+  my @dirs    = ( File::Spec->catdir($root_dir, $option{clonetag}, $repo_config->{local}) );
+  my $tag_dir = File::Spec->catdir($root_dir, $option{tag}, $repo_config->{local});
+
+  $self->logger->logcroak("Unknown tag $option{clonetag} on repo $option{repo} ($dirs[0])\n")
+    unless ( -d $dirs[0] );
+
+  if ( -e $tag_dir ) {
+    if( $option{force} ) {
+      $self->logger->debug("Removing $tag_dir");
+      rmtree $tag_dir; # should be remove_tree, but will use legacy to match mkdir
+    }
+    else {
+      $self->logger->logcroak("Tag $option{tag} on repo $option{repo} already exists ($tag_dir), use --force\n");
+    }
+  }
 
   mkpath $tag_dir;
 
   for my $dir (@dirs) {
-    opendir my $dh, $dir;
+    opendir my $dh, $dir
+        or $self->logger->logcroak("Failed to open $dir: $!\nNew tag is probably unusable\n");
     while ( my $entry = readdir $dh ) {
       next if ( $entry eq "." || $entry eq ".." );
-      my $rel_entry = "$dir/$entry";
-      $rel_entry =~ s/$root_dir\/head\/$repo_config->{local}\///;
+      my $rel_entry = File::Spec->catfile($dir, $entry);
+      $rel_entry =~ s{^$dirs[0]/}{}; # TODO use File::Spec
 
-      if ( -d "$dir/$entry" ) {
-        push @dirs, "$dir/$entry";
-        $self->logger->debug("Creating directory: $tag_dir/$rel_entry.");
-        mkdir "$tag_dir/$rel_entry";
+      my $srcfile = File::Spec->catfile($dir,$entry);
+      my $dstfile = File::Spec->catfile($tag_dir,$rel_entry);
+      $self->logger->debug("Tag Src: $srcfile, Dst: $dstfile");
+
+      if ( -d $srcfile ) {
+        push @dirs, $srcfile;
+        $self->logger->debug("Creating directory: $dstfile");
+        mkdir $dstfile;
         next;
       }
 
       $self->logger->debug(
-        "Linking (hard): $dir/$entry -> $tag_dir/$rel_entry");
-      if ( -f File::Spec->catfile( $tag_dir, $rel_entry ) ) {
-        unlink File::Spec->catfile( $tag_dir, $rel_entry );
-      }
-      link "$dir/$entry", "$tag_dir/$rel_entry";
+        "Linking (hard): $srcfile -> $dstfile");
+      link $srcfile, $dstfile;
     }
     closedir $dh;
   }
@@ -630,12 +656,12 @@ create consistant installations of your server.
 To configure repositor.io create a configuration file
 I</etc/rex/repositorio.conf>.
  RepositoryRoot = /srv/html/repo/
-   
+
  # log4perl configuration file
  <Log4perl>
    config = /etc/rex/io/log4perl.conf
  </Log4perl>
-   
+
  # create a mirror of the nightly rex repository
  # the files will be stored in
  # /srv/html/repo/head/rex-centos-6-x86-64/CentOS/6/rex/x86_64/
@@ -644,7 +670,7 @@ I</etc/rex/repositorio.conf>.
    local = rex-centos-6-x86-64/CentOS/6/rex/x86_64/
    type  = Yum
  </Repository>
-   
+
  # create a mirror of centos 6
  # and download the pxe boot files, too.
  <Repository centos-6-x86-64>
@@ -653,13 +679,13 @@ I</etc/rex/repositorio.conf>.
    type   = Yum
    images = true
  </Repository>
-   
+
  # create a custom repository
  <Repository centos-6-x86-64-mixed>
    local = centos-6-x86-64-mixed/mixed/6/x86_64/
    type  = Yum
  </Repository>
-   
+
  <Repository debian-wheezy-i386-main>
    url       = http://ftp.de.debian.org/debian/
    local     = debian-wheezy-amd64-main/debian
@@ -668,7 +694,7 @@ I</etc/rex/repositorio.conf>.
    dist      = wheezy
    component = main
  </Repository>
- 
+
 If you want to sign your custom repositories you have to configure the gpg key to use.
 repositorio automatically exports the public key into the root of the repository, so it can be imported from the clients.
 If you don't specify the gpg password repositorio will ask you for the password.
