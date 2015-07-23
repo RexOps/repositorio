@@ -1,3 +1,5 @@
+use strict;
+
 package Rex::Repositorio::Server::Helper::Proxy;
 
 use base 'Mojolicious::Plugin';

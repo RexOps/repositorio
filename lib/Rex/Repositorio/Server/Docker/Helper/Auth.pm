@@ -14,7 +14,7 @@ use warnings;
 sub create {
   my ( $class, $type, $config ) = @_;
   my $auth_class = "Rex::Repositorio::Server::Docker::Helper::Auth::$type";
-  eval "use $auth_class;";
+  eval "use $auth_class;1;";
   if ($@) {
     die "Error finding auth class: $auth_class.";
   }

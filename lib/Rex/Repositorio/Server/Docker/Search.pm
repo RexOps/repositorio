@@ -42,7 +42,7 @@ sub search {
   my @search_result =
     map {
     my @_t = split( /\//, $_ );
-    $_ = {
+    {
       description => '',
       name        => "$_t[-3]/$_t[-2]",
       }

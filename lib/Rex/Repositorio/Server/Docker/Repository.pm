@@ -109,7 +109,7 @@ sub put_repo {
     "repository", $repo_name );
 
   my $ref = decode_json( $self->req->body );
-  my $store = [ map { $_ = { id => $_->{id} } } @{$ref} ];
+  my $store = [ map { { id => $_->{id} } } @{$ref} ];
 
   mkpath $repo_dir;
   open( my $fh, ">", File::Spec->catfile( $repo_dir, "repo.json" ) ) or die($!);
