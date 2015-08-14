@@ -31,7 +31,7 @@ sub mirror {
   my @files;
 
   for my $dir (@dirs) {
-    $dir = "$dir/" if ( $dir !~ m/\/$/ );
+    $dir = "$dir/" if ( $dir !~ m{/$} );
     my $content = $self->download($dir);
 
     #my $dom     = Mojo::DOM->new($content);
@@ -40,11 +40,11 @@ sub mirror {
     $self->app->print_info("Following $dir...");
     $self->app->logger->debug("Following $dir");
 
-    push @dirs, map { $_ = "$dir$_" }
-      grep { $_ =~ m/\/$/ }
-      grep { $_ !~ m/^\./ } @links;
-    push @files, map { $_ = "$dir$_" }
-      grep { $_ !~ m/\/$/ } @links;
+    push @dirs, map { "$dir$_" }
+      grep { $_ =~ m{/$} }
+      grep { $_ !~ m{^\.} } @links;
+    push @files, map { "$dir$_" }
+      grep { $_ !~ m{/$} } @links;
   }
 
   my $pr = $self->app->progress_bar(

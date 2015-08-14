@@ -29,7 +29,7 @@ sub create {
 
   my $type     = $option{type};
   my $repo_mod = "Rex::Repositorio::Repository::$type";
-  eval "use $repo_mod;";
+  eval "use $repo_mod;1;";
   if ($EVAL_ERROR) {
     confess "Error loading repository type: $type. ($EVAL_ERROR)";
   }
