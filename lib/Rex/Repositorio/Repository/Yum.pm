@@ -186,6 +186,17 @@ sub _download_packages {
     my $package_name = $package->{name};
 
     my $local_file = File::Spec->catfile($destbase,$package->{location});
+
+    my ($type, $value);
+    if ($option{'size_only'}) {
+      $type = 'size';
+      $value = $package->{size};
+    }
+    else {
+      $type = $package->{checksum}->{type};
+      $value = $package->{checksum}->{data};
+    }
+
     $self->download_package(
       url  => $package_url,
       name => $package_name,
@@ -193,8 +204,8 @@ sub _download_packages {
       cb   => sub {
         $self->_checksum(
           @_,
-          $package->{checksum}->{type},
-          $package->{checksum}->{data}
+          $type,
+          $value,
         );
       },
       update_file => $option{update_files},
@@ -232,7 +243,7 @@ sub _get_repomd_xml {
         type => $checksum_node->getAttribute("type"),
         data => $checksum_node->textContent,
       },
-      size => $size_node->getAttribute("archive"),
+      size => $size_node->getAttribute('package'),
       };
   }
 

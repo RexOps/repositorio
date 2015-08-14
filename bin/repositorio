@@ -59,7 +59,7 @@ my %cli;
 GetOptions(
   \%cli,       "mirror",          "tag=s",         "repo=s",
   "help",      "update-metadata", "update-files",  "no-update-files",
-  "force-download",
+  "force-download", "size-only",
   "list",      "add-file=s",      "remove-file=s", "init",
   "server",    "errata",          "update-errata", "package=s",
   "version=s", "arch=s",          "clonetag=s",    "force"

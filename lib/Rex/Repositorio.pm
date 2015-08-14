@@ -93,6 +93,7 @@ sub parse_cli_option {
 
     $self->mirror(
       repo            => $option{repo},
+      size_only       => $option{'size-only'},
       update_metadata => ( $option{"update-metadata"} || 0 ),
       update_files    => $update_files,
       force           => ( $option{"force-download"} || 0 ),
@@ -369,6 +370,10 @@ sub mirror {
       repo => {
         type => SCALAR
       },
+      size_only => {
+        type     => BOOLEAN,
+        optional => 1,
+      },
       update_metadata => {
         type     => BOOLEAN,
         optional => 1,
@@ -404,6 +409,7 @@ sub mirror {
     );
 
     $repo_o->mirror(
+      size_only       => $option{size_only},
       update_metadata => $option{update_metadata},
       update_files    => $option{update_files},
       force           => $option{force},

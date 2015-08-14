@@ -362,6 +362,20 @@ sub _checksum_md5 {
     confess "Checksum of $file wrong.";
   }
 }
+sub _checksum_size {
+  my ( $self, $file, $wanted_size ) = @_;
+
+  my @stats = stat($file);
+  my $file_size = $stats[7];
+
+  $self->app->logger->debug(
+    "wanted_size: ${wanted_size} == ${file_size}");
+
+  if ( $wanted_size ne $file_size ) {
+    $self->app->logger->error("File size for ${file} wrong.");
+    confess "File size of ${file} wrong.";
+  }
+}
 
 sub _checksum {
   my ( $self, $file, $type, $wanted_checksum ) = @_;
@@ -372,6 +386,9 @@ sub _checksum {
   }
   elsif ( $type eq "md5" ) {
     return $self->_checksum_md5( $file, $wanted_checksum );
+  }
+  elsif ( $type eq 'size' ) {
+    return $self->_checksum_size( $file, $wanted_checksum );
   }
 
   my $sha = Digest::SHA->new($c_type);
