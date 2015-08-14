@@ -93,12 +93,10 @@ sub mirror {
     my $path     = $file;
     my $repo_url = $self->repo->{url};
     $path =~ s/$repo_url//g;
-    my $local_path = File::Spec->catdir(
+    my $local_file = File::Spec->catdir(
       $self->app->get_repo_dir( repo => $self->repo->{name} ),
-      dirname($path) );
-    mkpath $local_path;
-
-    my $local_file = $self->repo->{local} . "/" . $path;
+      $path );
+    mkpath dirname($local_file);
 
     $self->download_package(
       url  => "$repo_url/$file",
