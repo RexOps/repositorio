@@ -12,11 +12,22 @@ use Rex::Repositorio;
 use common::sense;
 use Carp;
 use Config::General;
-use Log::Log4perl;
+use Log::Dispatch;
 use Data::Dumper;
 use Getopt::Long;
 
 use lib '/usr/lib/rex/perl/share/perl5/vendor_perl';
+
+my %cli;
+GetOptions(
+  \%cli,       "mirror",          "tag=s",         "repo=s",
+  "help",      "update-metadata", "update-files",  "no-update-files",
+  "force-download",
+  "list",      "add-file=s",      "remove-file=s", "init",
+  "server",    "errata",          "update-errata", "package=s",
+  "version=s", "arch=s",          "clonetag=s",    "force",
+  "checksums", "loglevel=s",
+);
 
 my @config_file_locations = (
   "./repositorio.conf", "/etc/rex/repositorio.conf",
@@ -42,28 +53,19 @@ my $conf_o = Config::General->new(
 
 my %conf   = $conf_o->getall;
 
-if ( !exists $conf{Log4perl} ) {
-  print "No configuration for log4perl found. Exiting.\n";
-  exit 1;
-}
+my $log_file       = $conf{LogFile} || undef;
+my $log_file_level = $conf{LogFileLevel}    || 'info';
+my $screen_level   = $conf{ScreenLevel} || 'info';
+$screen_level      = $cli{'loglevel'} if $cli{'loglevel'};
 
-Log::Log4perl::init( $conf{Log4perl}{config} );
-my $logger = Log::Log4perl->get_logger();
+my $log_outputs = [[ 'Screen', 'min_level' => $screen_level, stderr => 0, newline => 1, ]];
+push @{$log_outputs}, [ 'File', 'min_level' => $log_file_level, filename => $log_file, newline => 1, mode => '>>'] if $log_file;
+my $logger = Log::Dispatch->new(outputs => $log_outputs);
 
 $logger->info("repositorio started.");
 $logger->debug("Logger initialized.");
 $logger->debug("Configuration Dump:");
 $logger->debug( Dumper( \%conf ) );
-
-my %cli;
-GetOptions(
-  \%cli,       "mirror",          "tag=s",         "repo=s",
-  "help",      "update-metadata", "update-files",  "no-update-files",
-  "force-download", "size-only",
-  "list",      "add-file=s",      "remove-file=s", "init",
-  "server",    "errata",          "update-errata", "package=s",
-  "version=s", "arch=s",          "clonetag=s",    "force"
-);
 
 my $app = Rex::Repositorio->new( config => \%conf, logger => $logger );
 $app->run(%cli);

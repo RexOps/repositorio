@@ -28,10 +28,7 @@ sub mirror {
   $self->repo->{local} =~ s/\/$//;
   my $name = $self->repo->{name};
 
-  my $pr = $self->app->progress_bar(
-    title  => "Downloading metadata...",
-    length => 3,
-  );
+  $self->app->logger->info("Downloading metadata...");
 
   my ( $packages_ref, $repomd_ref );
   ( $packages_ref, $repomd_ref ) = $self->_get_repomd_xml( $self->repo->{url} );
@@ -49,7 +46,7 @@ sub mirror {
   }
   else {
     # add new tagstyles here
-    $self->app->logger->logcroak('Unknown TagStyle: '.$self->app->config->{TagStyle});
+    $self->app->logger->log_and_croak('Unknown TagStyle: '.$self->app->config->{TagStyle});
   }
 
   my $repodatabase = File::Spec->catfile( $destbase, 'repodata' );
@@ -61,7 +58,7 @@ sub mirror {
       force => $option{update_metadata},
     );
 
-    $pr->update(2);
+    $self->app->logger->debug("2/3 ${url}");
 
     $self->download_metadata(
       url   => $url,
@@ -69,30 +66,29 @@ sub mirror {
       force => $option{update_metadata},
     );
 
-    $pr->update(3);
+    $self->app->logger->debug("3/3 ${url}");
   }
   catch {
-    $pr->update(3);
+    $self->app->logger->debug("3/3 ${url}");
     $self->app->logger->error($_);
   };
 
+  $self->app->logger->info('Downloading packages...');
   $self->_download_packages( \%option, @packages );
 
-  print "\n";
-  print "\n";
-  $pr = $self->app->progress_bar(
-    title  => "Downloading rest of metadata...",
-    length => scalar( @{ $repomd_ref->{data} } ),
-  );
+  $self->app->logger->info('Downloading rest of metadata...');
 
-  my $mi = 0;
+  my $m_count = 0;
+  my $m_total = scalar(@{$repomd_ref->{data}});
+
   for my $file_data ( @{ $repomd_ref->{data} } ) {
-    $mi++;
-    $pr->update($mi);
 
     my $file_url =
       $self->{repo}->{url} . "/" . $file_data->{location}->[0]->{href};
     my $file = basename $file_data->{location}->[0]->{href};
+
+    $m_count++;
+    $self->app->logger->debug("${m_count}/$m_total ${file_url}");
 
     $self->download_metadata(
       url  => $file_url,
@@ -110,28 +106,23 @@ sub mirror {
 
   if ( exists $self->repo->{images} && $self->repo->{images} eq "true" ) {
 
-    print "\n";
-    print "\n";
-    $pr = $self->app->progress_bar(
-      title  => "Downloading images...",
-      length => 7,
-    );
-
-    my $ii = 0;
-    for my $file (
-      (
+    $self->app->logger->info('Downloading images...');
+    my @files = (
         "images/boot.iso",           "images/efiboot.img",
         "images/efidisk.img",        "images/install.img",
         "images/pxeboot/initrd.img", "images/pxeboot/vmlinuz",
         "images/upgrade.img",        "LiveOS/squashfs.img",
-      )
-      )
-    {
-      $ii++;
-      $pr->update($ii);
+    );
+    my $file_count = 0;
+    my $file_total = scalar @files;
 
+    for my $file (@files) {
       my $file_url   = $self->repo->{url} . "/" . $file;
       my $local_file = File::Spec->catfile($destbase, $file);
+
+      $file_count++;
+      $self->app->logger->debug("${file_count}/$file_total ${file_url}");
+
       try {
         $self->download_package(
           url  => $file_url,
@@ -141,7 +132,7 @@ sub mirror {
         1;
       }
       catch {
-        $self->app->logger->error("Error downloading $file_url.");
+        $self->app->logger->error("Error downloading ${file_url}.");
       };
     }
   }
@@ -156,13 +147,8 @@ sub _download_packages {
 
   my %option = %{$_option};
 
-  my $i = 0;
-  print "\n";
-  print "\n";
-  my $pr = $self->app->progress_bar(
-    title  => "Downloading packages...",
-    length => scalar(@packages),
-  );
+  my $p_count = 0;
+  my $p_total = scalar @packages;
 
   my $destbase;
 
@@ -175,26 +161,25 @@ sub _download_packages {
   }
   else {
     # add new tagstyles here
-    $self->app->logger->logcroak('Unknown TagStyle: '.$self->app->config->{TagStyle});
+    $self->app->logger->log_and_croak('Unknown TagStyle: '.$self->app->config->{TagStyle});
   }
 
   for my $package (@packages) {
-    $i++;
-    $pr->update($i);
-
     my $package_url  = $self->repo->{url} . "/" . $package->{location};
     my $package_name = $package->{name};
 
+    $p_count++;
+    $self->app->logger->debug("${p_count}/$p_total ${package_url}");
     my $local_file = File::Spec->catfile($destbase,$package->{location});
 
     my ($type, $value);
-    if ($option{'size_only'}) {
-      $type = 'size';
-      $value = $package->{size};
-    }
-    else {
+    if ($option{'checksums'}) {
       $type = $package->{checksum}->{type};
       $value = $package->{checksum}->{data};
+    }
+    else {
+      $type = 'size';
+      $value = $package->{size};
     }
 
     $self->download_package(
@@ -225,7 +210,6 @@ sub _get_repomd_xml {
   $primary_file = $primary_file->{location}->[0]->{href};
 
   $url = $url . "/" . $primary_file;
-  $self->app->logger->debug("Downloading $url.");
   my $xml = $self->get_xml( $self->download_gzip($url) );
 
   my @packages;
@@ -235,8 +219,7 @@ sub _get_repomd_xml {
     my ($checksum_node) = $xml_package->getChildrenByTagName("checksum");
     my ($size_node)     = $xml_package->getChildrenByTagName("size");
     my ($location_node) = $xml_package->getChildrenByTagName("location");
-    push @packages,
-      {
+    push @packages, {
       location => $location_node->getAttribute("href"),
       name     => $name_node->textContent,
       checksum => {
@@ -244,7 +227,7 @@ sub _get_repomd_xml {
         data => $checksum_node->textContent,
       },
       size => $size_node->getAttribute('package'),
-      };
+    };
   }
 
   return ( \@packages, $repomd_ref );

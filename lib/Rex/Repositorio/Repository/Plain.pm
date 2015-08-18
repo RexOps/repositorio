@@ -25,7 +25,7 @@ extends "Rex::Repositorio::Repository::Base";
 sub mirror {
   my ( $self, %option ) = @_;
 
-  $self->app->print_info("Collecting files. This may take a while...");
+  $self->app->logger->info('Collecting files. This may take a while...');
 
   my @dirs = ( $self->repo->{url} );
   my @files;
@@ -37,28 +37,25 @@ sub mirror {
     #my $dom     = Mojo::DOM->new($content);
     my @links = ( $content =~ m/<a[^>+]href=["']?([^"'>]+)["'>]/ig );
 
-    $self->app->print_info("Following $dir...");
-    $self->app->logger->debug("Following $dir");
+    $self->app->logger->debug("Following ${dir}...");
 
-    push @dirs, map { "$dir$_" }
+    push @dirs, map { "${dir}${_}" }
       grep { $_ =~ m{/$} }
       grep { $_ !~ m{^\.} } @links;
-    push @files, map { "$dir$_" }
+    push @files, map { "${dir}${_}" }
       grep { $_ !~ m{/$} } @links;
   }
 
-  my $pr = $self->app->progress_bar(
-    title  => "Downloading packages...",
-    length => scalar(@files),
-  );
-
-  my $i = 0;
+  my $p_count = 0;
+  my $p_total = scalar(@files);
+  $self->app->logger->info('Downloading packages...');
   for my $file (@files) {
-    $i++;
-    $pr->update($i);
 
     my $path     = $file;
     my $repo_url = $self->repo->{url};
+    $p_count++;
+    $self->app->logger->info("${p_count}/${p_total} ${path}");
+
     $path =~ s/$repo_url//g;
     my $local_file = File::Spec->catdir(
       $self->app->get_repo_dir( repo => $self->repo->{name} ),

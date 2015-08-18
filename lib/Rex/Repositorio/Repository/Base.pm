@@ -55,13 +55,12 @@ sub download_gzip {
 
   require Compress::Zlib;
 
-  $self->app->logger->debug("Starting uncompressing of: $url");
-
+  my $t1 = time();
   my $un_content = Compress::Zlib::memGunzip($content);
-  $self->app->logger->debug("Finished uncompressing of: $url");
+  my $tdiff = time() - $t1;
+  $self->app->logger->debug("Uncompressing: $url took: ${tdiff} seconds");
   if ( !$un_content ) {
-    $self->app->logger->error("Error uncompressing data.");
-    confess "Error uncompressing data.";
+    $self->app->logger->log_and_croak('error', message => 'Error uncompressing data.');
   }
 
   return $un_content;
@@ -77,27 +76,34 @@ sub gunzip {
 sub download {
   my ( $self, $url ) = @_;
 
-  $self->app->logger->debug("Starting download of: $url");
-  my $resp = $self->ua->get($url);
-  $self->app->logger->debug("Finished download of: $url");
+  my $retry_count = 0;
+  my $max_retries = $self->app->config->{DownloadRetryCount} // 3;
+  my $success;
+  my $content;
 
-  if ( !$resp->is_success ) {
-    $self->app->logger->error("Can't download $url.");
-    $self->app->logger->error( "Status: " . $resp->status_line );
-    my $retry_count = 1;
-    while ( !$resp->is_success
-      && $retry_count <= ( $self->app->config->{DownloadRetryCount} // 3 ) )
-    {
-      $self->app->logger->error("Retry downloading of url: $url");
-      $retry_count += 1;
-      $resp = $self->ua->get($url);
-    }
+  while (!$success && $retry_count <= $max_retries ) {
+    my $t1 = time();
+    my $resp = $self->ua->get($url);
+    my $tdiff = time() - $t1;
+    $self->app->logger->debug("Download: ${url} took: ${tdiff} seconds");
+
     if ( !$resp->is_success ) {
-      confess "Error downloading $url.";
+      $self->app->logger->error("Download: ${url} failed with status: " . $resp->status_line);
+      $retry_count++;
+      if ($retry_count <= $max_retries) {
+        $self->app->logger->error("Download: ${url} retrying");
+      }
+      else {
+        $self->app->logger->log_and_croak(level => 'error', message=> "download: ${url} failed and exhausted all retries.");
+      }
+    }
+    else {
+      $success = 1;
+      $content = $resp->content;
     }
   }
 
-  return $resp->content;
+  return $content;
 }
 
 sub get_xml {
@@ -150,7 +156,7 @@ sub download_package {
       $self->app->config->{RepositoryRoot}, $option{dest});
   }
   else {
-    $self->app->logger->logcroak('Unknown TagStyle: '.$self->app->config->{TagStyle})
+    $self->app->logger->log_and_croak(level => 'error', message => 'Unknown TagStyle: '.$self->app->config->{TagStyle})
   }
 
   $self->_download_binary_file(
@@ -195,7 +201,7 @@ sub download_metadata {
       $self->app->config->{RepositoryRoot}, $option{dest});
   }
   else {
-    $self->app->logger->logcroak('Unknown TagStyle: '.$self->app->config->{TagStyle})
+    $self->app->logger->log_and_croak('Unknown TagStyle: '.$self->app->config->{TagStyle})
   }
 
   $self->_download_binary_file(
@@ -232,7 +238,7 @@ sub _download_binary_file {
     }
   );
 
-  $self->app->logger->debug("Downloading: $option{url} -> $option{dest}");
+  $self->app->logger->debug("_download_binary_file: $option{url} -> $option{dest}");
 
   mkpath( dirname( $option{dest} ) ) if ( !-d dirname $option{dest} );
 
@@ -249,44 +255,61 @@ sub _download_binary_file {
       # if callback is failing, we need to download the file once again.
       # so just set force to true
       $self->app->logger->debug(
-        "Setting option force -> 1: update_file is enabled and callback failed."
+        "_download_binary_file: $option{dest} Setting option force -> 1: update_file is enabled and callback failed."
       );
       $option{force} = 1;
     };
   }
 
   if ( -f $option{dest} && !$option{force} ) {
-    $self->app->logger->debug("Skipping $option{url}. File already exists.");
+    $self->app->logger->debug("_download_binary_file: Skipping $option{dest}. File already exists and is the correct checksum");
     return;
   }
 
   if ( !-w dirname( $option{dest} ) ) {
-    $self->app->logger->error( "Can't write to " . dirname( $option{dest} ) );
-    confess "Can't write to " . dirname( $option{dest} );
+    $self->app->logger->log_and_croak( level => 'error', message => "_download_binary_file: Can't write to " . dirname( $option{dest} ) );
   }
 
   if ( -f $option{dest} && $option{force} ) {
+    $self->app->logger->debug("_download_binary_file: $option{dest} force enabled, unlinking");
     unlink $option{dest};
   }
 
-  open my $fh, ">", $option{dest};
-  binmode $fh;
-  my $resp = $self->ua->get(
-    $option{url},
-    ':content_cb' => sub {
-      my ( $data, $response, $protocol ) = @_;
-      print $fh $data;
+  my $retry_count = 0;
+  my $max_retries = $self->app->config->{DownloadRetryCount} // 3;
+  my $success;
+
+  while (!$success && $retry_count <= $max_retries ) {
+    my $t1 = time();
+    open my $fh, '>', $option{dest};
+    binmode $fh;
+    my $resp = $self->ua->get(
+      $option{url},
+      ':content_cb' => sub {
+        my ( $data, $response, $protocol ) = @_;
+        print $fh $data;
+      }
+    );
+    close $fh;
+    my $tdiff = time() - $t1;
+    $self->app->logger->debug("_download_binary_file: $option{url} took: ${tdiff} seconds");
+
+    if ( !$resp->is_success ) {
+      unlink $option{dest};
+      $self->app->logger->error("_download_binary_file: $option{url} failed with status: " . $resp->status_line);
+      $retry_count++;
+      if ($retry_count <= $max_retries) {
+        $self->app->logger->error("_download_binary_file: $option{url} retrying");
+      }
+      else {
+        $self->app->logger->log_and_croak(level => 'error', message=> "_download_binary_file: $option{url} failed and exhausted all retries.");
+      }
     }
-  );
-  close $fh;
-
-  if ( !$resp->is_success ) {
-    $self->app->logger->error("Can't download $option{url}.");
-    $self->app->logger->error( "Status: " . $resp->status_line );
-    unlink $option{dest};
-    confess "Error downloading $option{url}.";
+    else {
+      $success = 1;
+      $self->app->logger->notice("Downloaded new file: $option{url}");
+    }
   }
-
   $option{cb}->( $option{dest} )
     if ( exists $option{cb} && ref $option{cb} eq "CODE" );
 }
@@ -306,16 +329,13 @@ sub add_file_to_repo {
   );
 
   if ( !-f $option{source} ) {
-    $self->app->logger->error("File $option{source} not found.");
-    confess "File $option{source} not found.";
+    $self->app->logger->log_and_croak(level => 'error', message => "add_file_to_repo: File $option{source} not found.");
   }
 
-  $self->app->logger->debug("Copy $option{source} -> $option{dest}");
+  $self->app->logger->debug("add_file_to_repo: Copy $option{source} -> $option{dest}");
   my $ret = copy $option{source}, $option{dest};
   if ( !$ret ) {
-    $self->app->logger->error(
-      "Error copying file $option{source} to $option{dest}");
-    confess "Error copying file $option{source} to $option{dest}";
+    $self->app->logger->log_and_croak(level => 'error', message => "add_file_to_repo: Error copying file $option{source} to $option{dest}");
   }
 }
 
@@ -354,12 +374,10 @@ sub _checksum_md5 {
 
   close $fh;
 
-  $self->app->logger->debug(
-    "wanted_checksum: $wanted_checksum == $file_checksum");
+  $self->app->logger->debug("_checksum_md5: file: ${file} wanted_checksum: ${wanted_checksum} == ${file_checksum}");
 
   if ( $wanted_checksum ne $file_checksum ) {
-    $self->app->logger->error("Checksum for $file wrong.");
-    confess "Checksum of $file wrong.";
+    $self->app->logger->log_and_croak(level => 'error', message => "_checksum_md5: Checksum for ${file} wrong.");
   }
 }
 sub _checksum_size {
@@ -368,12 +386,23 @@ sub _checksum_size {
   my @stats = stat($file);
   my $file_size = $stats[7];
 
-  $self->app->logger->debug(
-    "wanted_size: ${wanted_size} == ${file_size}");
+  $self->app->logger->debug("_checksum_size: file: ${file} wanted_size: ${wanted_size} == ${file_size}");
 
   if ( $wanted_size ne $file_size ) {
-    $self->app->logger->error("File size for ${file} wrong.");
-    confess "File size of ${file} wrong.";
+    $self->app->logger->log_and_croak(level => 'error', message => "_checksum_size: File size for ${file} wrong.");
+  }
+}
+sub _checksum_sha {
+  my ($self, $c_type, $file, $wanted_checksum) = @_;
+
+  my $sha = Digest::SHA->new($c_type);
+  $sha->addfile($file);
+  my $file_checksum = $sha->hexdigest;
+
+  $self->app->logger->debug("_checksum: file: ${file} wanted_checksum: ${wanted_checksum} == ${file_checksum}");
+
+  if ( $wanted_checksum ne $file_checksum ) {
+    $self->app->logger->log_and_croak(level => 'error', message => "_checksum_sha: Checksum for ${file} wrong.");
   }
 }
 
@@ -383,6 +412,7 @@ sub _checksum {
   my $c_type = 1;
   if ( $type eq "sha256" ) {
     $c_type = "256";
+    return $self->_checksum_sha( $c_type, $file, $wanted_checksum );
   }
   elsif ( $type eq "md5" ) {
     return $self->_checksum_md5( $file, $wanted_checksum );
@@ -390,17 +420,8 @@ sub _checksum {
   elsif ( $type eq 'size' ) {
     return $self->_checksum_size( $file, $wanted_checksum );
   }
-
-  my $sha = Digest::SHA->new($c_type);
-  $sha->addfile($file);
-  my $file_checksum = $sha->hexdigest;
-
-  $self->app->logger->debug(
-    "wanted_checksum: $wanted_checksum == $file_checksum");
-
-  if ( $wanted_checksum ne $file_checksum ) {
-    $self->app->logger->error("Checksum for $file wrong.");
-    confess "Checksum of $file wrong.";
+  else {
+    return $self->_checksum_sha( $c_type, $file, $wanted_checksum );
   }
 }
 

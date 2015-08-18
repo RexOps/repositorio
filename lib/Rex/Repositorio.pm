@@ -27,8 +27,8 @@ use Term::ANSIColor;
 
 # VERSION
 
-has config => ( is => 'ro' );
-has logger => ( is => 'ro' );
+has config     => ( is => 'ro' );
+has logger     => ( is => 'ro' );
 
 sub ua {
   my ( $self, %option ) = @_;
@@ -55,10 +55,10 @@ sub run {
 
   # this config checking/munging stuff should probably be in the 'has config' definition?
   $self->config->{RepositoryRoot} =~ s/\/$//;
-  $self->logger->logcroak(qq/"all" is a reserved word and cannot be used as a repo name\n/)
+  $self->logger->log_and_croak(qq/"all" is a reserved word and cannot be used as a repo name\n/)
     if grep { $_ eq 'all' } keys %{ $self->config->{Repository} };
   $self->config->{TagStyle} ||= 'TopDir';
-  $self->logger->logcroak(
+  $self->logger->log_and_croak(
     sprintf "Unknown TagStyle %s, must be TopDir or BottomDir\n", $self->config->{TagStyle} )
     unless $self->config->{TagStyle} =~ m/^(?:Top|Bottom)Dir$/;
 
@@ -74,15 +74,13 @@ sub parse_cli_option {
   }
 
   if ( exists $option{repo} ) {
-    $self->logger->logcroak(sprintf("Unknown repo: %s\n", $option{repo}))
+    $self->logger->log_and_croak(sprintf("Unknown repo: %s\n", $option{repo}))
       unless $option{repo} eq 'all'
         or $self->config->{Repository}->{ $option{repo} };
   }
 
   if ( exists $option{mirror} && exists $option{repo} ) {
-    $self->print_info(
-      "Going to mirror " . $option{repo} . ". This may take a while." );
-    print "\n";
+    $self->logger->info("Going to mirror $option{repo} This may take a while." );
 
     my $update_files = 1;
 
@@ -93,16 +91,13 @@ sub parse_cli_option {
 
     $self->mirror(
       repo            => $option{repo},
-      size_only       => $option{'size-only'},
+      checksums       => $option{'checksums'},
       update_metadata => ( $option{"update-metadata"} || 0 ),
       update_files    => $update_files,
       force           => ( $option{"force-download"} || 0 ),
     );
 
-    print "\n";
-    print "\n";
-    $self->print_info( "Finished downloading of files for " . $option{repo} );
-    print "\n";
+    $self->logger->info("Finished downloading of files for $option{repo}");
   }
 
   elsif ( exists $option{tag} && exists $option{repo} ) {
@@ -370,7 +365,7 @@ sub mirror {
       repo => {
         type => SCALAR
       },
-      size_only => {
+      checksums => {
         type     => BOOLEAN,
         optional => 1,
       },
@@ -409,7 +404,7 @@ sub mirror {
     );
 
     $repo_o->mirror(
-      size_only       => $option{size_only},
+      checksums       => $option{checksums},
       update_metadata => $option{update_metadata},
       update_files    => $option{update_files},
       force           => $option{force},
@@ -454,10 +449,10 @@ sub tag {
   }
   else {
     # add other styles here
-    $self->logger->logcroak('Shouldnt have gotten here');
+    $self->logger->log_and_croak('Shouldnt have gotten here');
   }
 
-  $self->logger->logcroak("Unknown tag $option{clonetag} on repo $option{repo} ($dirs[0])\n")
+  $self->logger->log_and_croak("Unknown tag $option{clonetag} on repo $option{repo} ($dirs[0])\n")
     unless ( -d $dirs[0] );
 
   if ( -e $tag_dir ) {
@@ -466,7 +461,7 @@ sub tag {
       rmtree $tag_dir; # should be remove_tree, but will use legacy to match mkdir
     }
     else {
-      $self->logger->logcroak("Tag $option{tag} on repo $option{repo} already exists ($tag_dir), use --force\n");
+      $self->logger->log_and_croak("Tag $option{tag} on repo $option{repo} already exists ($tag_dir), use --force\n");
     }
   }
 
@@ -474,7 +469,7 @@ sub tag {
 
   for my $dir (@dirs) {
     opendir my $dh, $dir
-        or $self->logger->logcroak("Failed to open $dir: $!\nNew tag is probably unusable\n");
+        or $self->logger->log_and_croak("Failed to open $dir: $!\nNew tag is probably unusable\n");
     while ( my $entry = readdir $dh ) {
       next if ( $entry eq '.' || $entry eq '..' );
       my $rel_entry = File::Spec->catfile($dir, $entry);
@@ -525,7 +520,7 @@ sub get_errata_dir {
   }
   else {
     # add other styles here
-    $self->logger->logcroak('Shouldnt have gotten here');
+    $self->logger->log_and_croak('Shouldnt have gotten here');
   }
 
 }
@@ -553,59 +548,16 @@ sub get_repo_dir {
   }
   else {
     # add other styles here
-    $self->logger->logcroak('Shouldnt have gotten here');
+    $self->logger->log_and_croak('Shouldnt have gotten here');
   }
 
-}
-
-sub progress_bar {
-  my $self   = shift;
-  my %option = validate(
-    @_,
-    {
-      title => {
-        type => SCALAR,
-      },
-      length => {
-        type => SCALAR,
-      }
-    }
-  );
-
-  $self->print_info( $option{title} );
-  print "\n";
-
-  my $pr = Term::ProgressBar->new( { count => $option{length} } );
-  return $pr;
-}
-
-sub print_info {
-  my ( $self, $msg ) = @_;
-  print color "bold green";
-  print ">> ";
-  print color "reset";
-
-  my @parts = split( / /, $msg );
-  my $current_line_len = 3;
-
-  for my $part (@parts) {
-    $current_line_len += length $part;
-    if ( $current_line_len >= 80 ) {
-      print "\n   ";
-      $current_line_len = 3;
-    }
-
-    print "$part ";
-  }
-
-  print "\n";
 }
 
 sub _print {
   my $self  = shift;
   my @lines = @_;
 
-  print "repositorio: $VERSION\n";
+  print "repositorio: ${VERSION}\n";
   print "-" x 80;
   print "\n";
   print "$_\n" for @lines;

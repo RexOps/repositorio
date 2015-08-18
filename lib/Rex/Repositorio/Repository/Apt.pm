@@ -56,7 +56,7 @@ sub mirror {
   }
   else {
     # add new tagstyles here
-    $self->app->logger->logcroak('Unknown TagStyle: '.$self->app->config->{TagStyle});
+    $self->app->logger->log_and_croak(level => 'error', 'message' => 'Unknown TagStyle: '.$self->app->config->{TagStyle});
   }
 
   # try download Release and Release.gpg
