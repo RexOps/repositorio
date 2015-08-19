@@ -574,6 +574,7 @@ sub _help {
     "--update-metadata   update the metadata of a repository",
     "--update-files      download files even if they are already downloaded",
     "--force-download    force the download of already downloaded files",
+    "--checksums         when mirroring verify local packages with checksums instead of size",
     "--no-update-files   do not download packages",
     "--init              initialize an empty repository",
     "--add-file=file     add a file to a repository (needs --repo)",
@@ -585,6 +586,7 @@ sub _help {
     "  --package=pkg     for which package the errata should be queries",
     "  --version=ver     for which version of a package the errata should be queries",
     "  --arch=arch       for which architecture of a package the errata should be queries",
+    "--loglevel          change the stdout log level (debug,info,notice,warning,error,critical)",
     "--help              display this help message",
   );
 
