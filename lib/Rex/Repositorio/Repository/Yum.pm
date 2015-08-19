@@ -28,7 +28,7 @@ sub mirror {
   $self->repo->{local} =~ s/\/$//;
   my $name = $self->repo->{name};
 
-  $self->app->logger->info("Downloading metadata...");
+  $self->app->logger->notice("Downloading metadata...");
 
   my ( $packages_ref, $repomd_ref );
   ( $packages_ref, $repomd_ref ) = $self->_get_repomd_xml( $self->repo->{url} );
@@ -58,7 +58,7 @@ sub mirror {
       force => $option{update_metadata},
     );
 
-    $self->app->logger->debug("2/3 ${url}");
+    $self->app->logger->info("2/3 ${url}");
 
     $self->download_metadata(
       url   => $url,
@@ -66,17 +66,17 @@ sub mirror {
       force => $option{update_metadata},
     );
 
-    $self->app->logger->debug("3/3 ${url}");
+    $self->app->logger->info("3/3 ${url}");
   }
   catch {
-    $self->app->logger->debug("3/3 ${url}");
+    $self->app->logger->info("3/3 ${url}");
     $self->app->logger->error($_);
   };
 
-  $self->app->logger->info('Downloading packages...');
+  $self->app->logger->notice('Downloading packages...');
   $self->_download_packages( \%option, @packages );
 
-  $self->app->logger->info('Downloading rest of metadata...');
+  $self->app->logger->notice('Downloading rest of metadata...');
 
   my $m_count = 0;
   my $m_total = scalar(@{$repomd_ref->{data}});
@@ -88,7 +88,7 @@ sub mirror {
     my $file = basename $file_data->{location}->[0]->{href};
 
     $m_count++;
-    $self->app->logger->debug("${m_count}/$m_total ${file_url}");
+    $self->app->logger->info("${m_count}/$m_total ${file_url}");
 
     $self->download_metadata(
       url  => $file_url,
@@ -106,7 +106,7 @@ sub mirror {
 
   if ( exists $self->repo->{images} && $self->repo->{images} eq "true" ) {
 
-    $self->app->logger->info('Downloading images...');
+    $self->app->logger->notice('Downloading images...');
     my @files = (
         "images/boot.iso",           "images/efiboot.img",
         "images/efidisk.img",        "images/install.img",
@@ -121,7 +121,7 @@ sub mirror {
       my $local_file = File::Spec->catfile($destbase, $file);
 
       $file_count++;
-      $self->app->logger->debug("${file_count}/$file_total ${file_url}");
+      $self->app->logger->info("${file_count}/$file_total ${file_url}");
 
       try {
         $self->download_package(
@@ -169,7 +169,7 @@ sub _download_packages {
     my $package_name = $package->{name};
 
     $p_count++;
-    $self->app->logger->debug("${p_count}/$p_total ${package_url}");
+    $self->app->logger->info("${p_count}/$p_total ${package_url}");
     my $local_file = File::Spec->catfile($destbase,$package->{location});
 
     my ($type, $value);
@@ -203,7 +203,7 @@ sub _get_repomd_xml {
   my ( $self, $url ) = @_;
 
   my $repomd_ref =
-    $self->decode_xml( $self->download("$url/repodata/repomd.xml") );
+    $self->decode_xml( $self->download("${url}/repodata/repomd.xml") );
 
   my ($primary_file) =
     grep { $_->{type} eq "primary" } @{ $repomd_ref->{data} };

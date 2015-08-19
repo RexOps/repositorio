@@ -40,10 +40,7 @@ sub mirror {
   my $ref      = $self->_parse_debian_release_file($contents);
   my $arch     = $self->repo->{arch};
 
-  my $pr = $self->app->progress_bar(
-    title  => "Downloading metadata...",
-    length => 2,
-  );
+  $self->app->logger->notice('Downloading metadata...');
 
   my $destbase;
 
@@ -67,7 +64,7 @@ sub mirror {
       force => $option{update_metadata},
     );
 
-    $pr->update(1);
+    $self->app->logger->info("1/2 ${url}");
 
     $self->download_metadata(
       url   => $url . '/Release.gpg',
@@ -75,28 +72,27 @@ sub mirror {
       force => $option{update_metadata},
     );
 
-    $pr->update(2);
+    $self->app->logger->info("2/2 ${url}");
 
   }
   catch {
-    $pr->update(2);
+    $self->app->logger->info("2/2 ${url}");
     $self->app->logger->error($_);
   };
 
-  my $i = 0;
-  print "\n";
-  print "\n";
-  $pr = $self->app->progress_bar(
-    title  => "Downloading file listing...",
-    length => scalar( @{ $ref->{SHA1} || $ref->{SHA1Sum} } ),
-  );
+
+  $self->app->logger->notice('Downloading file listing...');
+  my $f_count = 0;
+  my $f_total = scalar( @{ $ref->{SHA1} || $ref->{SHA1Sum} } );
 
   for my $file_data ( @{ $ref->{SHA1} || $ref->{SHA1Sum} } ) {
-    $i++;
-    $pr->update($i);
 
     my $file_url = $url . "/" . $file_data->{file};
     my $file     = $file_data->{file};
+
+    $f_count++;
+    $self->app->logger->info("${f_count}/${f_total} ${url}");
+
     my $arch_str = join( "|", @archs );
     my $regexp   = qr{i18n|((Contents|binary|installer)\-(udeb-)?($arch_str))};
     next
@@ -145,19 +141,16 @@ sub mirror {
         my $content = $self->gunzip( io($local_packages_path)->binary->all );
         my $package_ref = $self->_parse_debian_package_file($content);
 
-        print "\n";
-        print "\n";
-        $pr = $self->app->progress_bar(
-          title  => "Downloading packages for $component ($arch)...",
-          length => scalar( @{$package_ref} ),
-        );
-        my $pi = 0;
+        $self->app->logger->notice("Downloading packages for ${component} (${arch})...");
+        my $p_count = 0;
+        my $p_total = scalar( @{$package_ref} );
 
         for my $package ( @{$package_ref} ) {
-          $pi++;
-          $pr->update($pi);
           my $package_url  = $self->repo->{url} . "/" . $package->{Filename};
           my $package_name = $package->{Package};
+
+          $p_count++;
+          $self->app->logger->info("${p_count}/$p_total ${package_url}");
 
           my $local_file = File::Spec->catfile($destbase,$package->{Filename});
           $self->download_package(
@@ -214,19 +207,16 @@ sub mirror {
           my $content = $self->gunzip( io($local_packages_path)->binary->all );
           my $package_ref = $self->_parse_debian_package_file($content);
 
-          print "\n";
-          print "\n";
-          $pr = $self->app->progress_bar(
-            title => "Downloading installer packages for $component ($arch)...",
-            length => scalar( @{$package_ref} ),
-          );
-          my $pi = 0;
+          $self->app->logger->notice("Downloading installer packages for ${component} (${arch})...");
+          my $p_count = 0;
+          my $p_total = scalar( @{$package_ref} );
 
           for my $package ( @{$package_ref} ) {
-            $pi++;
-            $pr->update($pi);
             my $package_url  = $self->repo->{url} . "/" . $package->{Filename};
             my $package_name = $package->{Package};
+
+            $p_count++;
+            $self->app->logger->info("${p_count}/${p_total} ${package_url}");
 
             my $local_file = File::Spec->catfile($destbase,$package->{Filename});
             $self->download_package(
@@ -275,23 +265,19 @@ sub mirror {
           my $file_ref =
             $self->_parse_sha256sum_file( File::Spec->catfile($local_file_path, 'SHA256SUMS' ));
 
-          print "\n";
-          print "\n";
-          $pr = $self->app->progress_bar(
-            title =>
-              "Downloading installer image files for $component ($arch)...",
-            length => scalar( @{$package_ref} ),
-          );
-          my $fi = 0;
+          $self->app->logger->notice("Downloading installer image files for ${component} (${arch})...");
+          my $f_count = 0;
+          my $f_total = scalar( @{$package_ref} );
 
           for my $file ( @{$file_ref} ) {
-            $fi++;
-            $pr->update($fi);
             my $file_url =
                 $self->repo->{url}
               . "/dists/$dist/$component/installer-$arch/current/images/"
               . $file->{file};
             my $file_name = $file->{file};
+
+            $f_count++;
+            $self->app->logger->info("${f_count}/$f_total ${file_url}");
 
             my $local_file = File::Spec->catfile( $self->repo->{local},
               "dists", $dist, $component, "installer-$arch", "current",
@@ -314,20 +300,17 @@ sub mirror {
   # download rest of metadata
   ##############################################################################
 
-  print "\n";
-  print "\n";
-  $pr = $self->app->progress_bar(
-    title  => "Downloading rest of metadata...",
-    length => ( 2 * scalar(@archs) ),
-  );
+  $self->app->logger->notice("Downloading rest of metadata...");
+  my $m_count = 0;
+  my $m_total = ( 2 * scalar(@archs) );
 
-  my $mi = 0;
   for my $arch (@archs) {
     for my $suffix (qw/bz2 gz/) {
-      $mi++;
-      $pr->update($mi);
       my $file_url = $url . "/Contents-$arch.$suffix";
       my $file     = "Contents-$arch.$suffix";
+
+      $m_count++;
+      $self->app->logger->info("${m_count}/$m_total ${file_url}");
 
       try {
         $self->download_metadata(
