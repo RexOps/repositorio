@@ -35,7 +35,7 @@ sub mirror {
   ##############################################################################
   # get meta data
   ##############################################################################
-  my $url      = $self->repo->{url} . "/dists/$dist";
+  my $url      = $self->repo->{url} . "/dists/${dist}";
   my $contents = $self->download("$url/Release");
   my $ref      = $self->_parse_debian_release_file($contents);
   my $arch     = $self->repo->{arch};
@@ -91,7 +91,7 @@ sub mirror {
     my $file     = $file_data->{file};
 
     $f_count++;
-    $self->app->logger->info("${f_count}/${f_total} ${url}");
+    $self->app->logger->info("${f_count}/${f_total} ${file_url}");
 
     my $arch_str = join( "|", @archs );
     my $regexp   = qr{i18n|((Contents|binary|installer)\-(udeb-)?($arch_str))};

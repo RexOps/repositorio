@@ -439,10 +439,8 @@ sub read_password {
   $msg ||= "Password: ";
 
   print $msg;
-  ReadMode "noecho";
   my $password = <STDIN>;
   chomp $password;
-  ReadMode 0;
   print "\n";
   return $password;
 }
