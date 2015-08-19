@@ -22,7 +22,6 @@ use File::Spec;
 use File::Copy;
 use Digest::SHA;
 use Digest::MD5;
-use Term::ReadKey;
 use JSON::XS;
 use List::MoreUtils 'firstidx';
 

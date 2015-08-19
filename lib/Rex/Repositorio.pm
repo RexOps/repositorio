@@ -22,8 +22,6 @@ use File::Copy;
 use Rex::Repositorio::Repository_Factory;
 use JSON::XS;
 use Data::Dumper;
-use Term::ProgressBar;
-use Term::ANSIColor;
 
 # VERSION
 
