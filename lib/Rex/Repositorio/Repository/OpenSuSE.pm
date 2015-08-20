@@ -93,7 +93,7 @@ sub mirror {
     $self->app->logger->info("${m_count}/$m_total ${repo_url}");
 
     my $local_file = File::Spec->catdir($self->app->get_repo_dir(repo => $self->repo->{name} ), $path);
-    make_path dirname($local_file);
+    make_path(dirname($local_file));
 
     $self->download_package(
       url  => "$repo_url/$file",
