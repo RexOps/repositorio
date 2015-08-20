@@ -80,22 +80,19 @@ sub mirror {
   push @all_meta_files, "$data_dir/repodata/appdata.xml";
   push @all_meta_files, "$data_dir/repodata/appdata.xml.gz";
 
-  my $pr = $self->app->progress_bar(
-    title  => "Downloading metadata...",
-    length => scalar(@all_meta_files),
-  );
+  $self->app->logger->notice('Downloading metadata...');
+  my $m_count = 0;
+  my $m_total = scalar(@all_meta_files);
 
-  my $i = 0;
   for my $file (@all_meta_files) {
-    $i++;
-    $pr->update($i);
-
     my $path     = $file;
     my $repo_url = $self->repo->{url};
     $path =~ s/$repo_url//g;
-    my $local_file = File::Spec->catdir(
-      $self->app->get_repo_dir( repo => $self->repo->{name} ),
-      $path );
+
+    $m_count++;
+    $self->app->logger->info("${m_count}/$m_total ${repo_url}");
+
+    my $local_file = File::Spec->catdir($self->app->get_repo_dir(repo => $self->repo->{name} ), $path);
     make_path dirname($local_file);
 
     $self->download_package(
