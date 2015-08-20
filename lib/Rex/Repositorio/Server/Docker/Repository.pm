@@ -52,7 +52,7 @@ sub get_repo_images {
         my ( $c, $tx ) = @_;
         $c->app->log->debug("Got data from upstream...");
 
-        mkpath( dirname($repo_file) );
+        File::Path->make_path( dirname($repo_file) );
         open my $fh, '>', $repo_file or die($!);
         binmode $fh;
         print $fh $tx->res->body;
@@ -63,7 +63,7 @@ sub get_repo_images {
         for my $image_data ( @{$ref} ) {
           my $image_dir =
             File::Spec->catdir( $repo_dir, "images", $image_data->{id} );
-          mkpath $image_dir;
+          File::Path->make_path($image_dir);
           open my $image_ep, '>',
             File::Spec->catfile( $image_dir, 'endpoint.data' )
             or die($!);
@@ -111,7 +111,7 @@ sub put_repo {
   my $ref = decode_json( $self->req->body );
   my $store = [ map { { id => $_->{id} } } @{$ref} ];
 
-  mkpath $repo_dir;
+  File::Path->make_path($repo_dir);
   open( my $fh, ">", File::Spec->catfile( $repo_dir, "repo.json" ) ) or die($!);
   print $fh encode_json($store);
   close($fh);
@@ -120,7 +120,7 @@ sub put_repo {
     File::Spec->catdir( $self->app->get_repo_dir( repo => $self->repo->{name} ),
     "images", $store->[-1]->{id} );
 
-  #  mkpath $image_dir;
+  #  make_path $image_dir;
   #  my $ancestor_file = File::Spec->catfile( $image_dir, "ancestors" );
   #
   #  open( my $afh, ">", $ancestor_file ) or die($!);
@@ -170,7 +170,7 @@ sub get_repo_tag {
       sub {
         my ( $c, $tx ) = @_;
         $c->app->log->debug("Got data from upstream...");
-        mkpath $tag_dir;
+        File::Path->make_path($tag_dir);
         my $ref = $tx->res->json;
         for my $e ( @{$ref} ) {
           open my $fh, ">", File::Spec->catfile( $tag_dir, $e->{name} )
@@ -221,7 +221,7 @@ sub put_repo_tag {
     File::Spec->catdir( $self->app->get_repo_dir( repo => $self->repo->{name} ),
     "repository", $repo_name, "tags" );
 
-  mkpath $tag_dir;
+  File::Path->make_path($tag_dir);
   open( my $fh, ">", File::Spec->catfile( $tag_dir, $tag_name ) ) or die($!);
   print $fh $tag_sha;
   close($fh);

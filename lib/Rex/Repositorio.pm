@@ -53,11 +53,12 @@ sub run {
 
   # this config checking/munging stuff should probably be in the 'has config' definition?
   $self->config->{RepositoryRoot} =~ s/\/$//;
-  $self->logger->log_and_croak(qq/"all" is a reserved word and cannot be used as a repo name\n/)
+  $self->logger->log_and_croak(level => 'error', message => qq/"all" is a reserved word and cannot be used as a repo name\n/)
     if grep { $_ eq 'all' } keys %{ $self->config->{Repository} };
   $self->config->{TagStyle} ||= 'TopDir';
   $self->logger->log_and_croak(
-    sprintf "Unknown TagStyle %s, must be TopDir or BottomDir\n", $self->config->{TagStyle} )
+    level => 'error', message => sprintf "Unknown TagStyle %s, must be TopDir or BottomDir\n", $self->config->{TagStyle}
+  )
     unless $self->config->{TagStyle} =~ m/^(?:Top|Bottom)Dir$/;
 
   $self->parse_cli_option(%option);
@@ -72,7 +73,7 @@ sub parse_cli_option {
   }
 
   if ( exists $option{repo} ) {
-    $self->logger->log_and_croak(sprintf("Unknown repo: %s\n", $option{repo}))
+    $self->logger->log_and_croak(level => 'error', message => sprintf("Unknown repo: %s\n", $option{repo}))
       unless $option{repo} eq 'all'
         or $self->config->{Repository}->{ $option{repo} };
   }
@@ -434,23 +435,12 @@ sub tag {
   my $root_dir    = $self->config->{RepositoryRoot};
   $repo_config->{local} =~ s/\/$//;
 
-  my (@dirs, $tag_dir);
+  # Why is this an array?
+  my @dirs;
+  push @dirs, $self->get_repo_dir(repo => $option{repo}, tag => $option{clonetag});
+  my $tag_dir = $self->get_repo_dir(repo => $option{repo}, tag => $option{tag});
 
-  # should probably use get_repo_dir ?
-  if ($self->config->{TagStyle} eq 'TopDir') {
-    push @dirs, File::Spec->catdir($root_dir, $option{clonetag}, $repo_config->{local});
-    $tag_dir = File::Spec->catdir($root_dir, $option{tag}, $repo_config->{local});
-  }
-  elsif ($self->config->{TagStyle} eq 'BottomDir') {
-    push @dirs, File::Spec->catdir($root_dir, $repo_config->{local}, $option{clonetag});
-    $tag_dir = File::Spec->catdir($root_dir, $repo_config->{local}, $option{tag});
-  }
-  else {
-    # add other styles here
-    $self->logger->log_and_croak('Shouldnt have gotten here');
-  }
-
-  $self->logger->log_and_croak("Unknown tag $option{clonetag} on repo $option{repo} ($dirs[0])\n")
+  $self->logger->log_and_croak(level => 'error', message => "Unknown tag $option{clonetag} on repo $option{repo} ($dirs[0])\n")
     unless ( -d $dirs[0] );
 
   if ( -e $tag_dir ) {
@@ -459,15 +449,15 @@ sub tag {
       rmtree $tag_dir; # should be remove_tree, but will use legacy to match mkdir
     }
     else {
-      $self->logger->log_and_croak("Tag $option{tag} on repo $option{repo} already exists ($tag_dir), use --force\n");
+      $self->logger->log_and_croak(level => 'error', message => "Tag $option{tag} on repo $option{repo} already exists (${tag_dir}), use --force\n");
     }
   }
 
-  mkpath $tag_dir;
+  File::Path->make_path($tag_dir);
 
   for my $dir (@dirs) {
     opendir my $dh, $dir
-        or $self->logger->log_and_croak("Failed to open $dir: $!\nNew tag is probably unusable\n");
+        or $self->logger->log_and_croak(level => 'error', message => "Failed to open $dir: $!\nNew tag is probably unusable\n");
     while ( my $entry = readdir $dh ) {
       next if ( $entry eq '.' || $entry eq '..' );
       my $rel_entry = File::Spec->catfile($dir, $entry);
@@ -518,35 +508,36 @@ sub get_errata_dir {
   }
   else {
     # add other styles here
-    $self->logger->log_and_croak('Shouldnt have gotten here');
+    $self->logger->log_and_croak(level => 'error', message => 'Shouldnt have gotten here');
   }
 
 }
 
 sub get_repo_dir {
-  my $self   = shift;
+  my $self = shift;
   my %option = validate(
     @_,
     {
       repo => {
         type => SCALAR
+      },
+      tag => {
+        type => SCALAR,
+        default => 'head',
       }
     }
   );
 
+  my $repo_config = $self->config->{Repository}->{ $option{repo} };
+
   if ($self->config->{TagStyle} eq 'TopDir') {
-    return File::Spec->catdir(
-      File::Spec->rel2abs( $self->config->{RepositoryRoot} ),
-      'head', $option{repo});
+    return File::Spec->catdir($self->config->{RepositoryRoot}, $option{tag}, $repo_config->{local});
   }
   elsif ($self->config->{TagStyle} eq 'BottomDir') {
-    return File::Spec->catdir(
-      File::Spec->rel2abs( $self->config->{RepositoryRoot} ),
-      $option{repo}, 'head');
+    return File::Spec->catdir($self->config->{RepositoryRoot}, $repo_config->{local}, $option{tag});
   }
   else {
-    # add other styles here
-    $self->logger->log_and_croak('Shouldnt have gotten here');
+    $self->logger->log_and_croak(level => 'error', message => 'get_repo_dir: Unknown TagStyle: '.$self->config->{TagStyle});
   }
 
 }

@@ -58,9 +58,8 @@ sub mirror {
 
     $path =~ s/$repo_url//g;
     my $local_file = File::Spec->catdir(
-      $self->app->get_repo_dir( repo => $self->repo->{name} ),
-      $path );
-    mkpath basename($local_file);
+      $self->app->get_repo_dir(repo => $self->repo->{name}), $path );
+    File::Path->make_path(basename($local_file));
 
     $self->download_package(
       url  => $file,
@@ -77,8 +76,8 @@ sub mirror {
 sub init {
   my $self = shift;
 
-  my $repo_dir = $self->app->get_repo_dir( repo => $self->repo->{name} );
-  mkpath $repo_dir;
+  my $repo_dir = $self->app->get_repo_dir(repo => $self->repo->{name});
+  File::Path->make_path($repo_dir);
 }
 
 sub add_file {
@@ -92,8 +91,7 @@ sub add_file {
     }
   );
 
-  my $dest = File::Spec->catdir($self->app->get_repo_dir( repo => $self->repo->{name} ),
-    basename( $option{file} ));
+  my $dest = File::Spec->catdir($self->app->get_repo_dir(repo => $self->repo->{name}), basename( $option{file} ));
 
   $self->add_file_to_repo( source => $option{file}, dest => $dest );
 }
@@ -110,8 +108,7 @@ sub remove_file {
     }
   );
 
-  my $file = File::Spec->catdir($self->app->get_repo_dir( repo => $self->repo->{name} ),
-     $option{file} );
+  my $file = File::Spec->catdir($self->app->get_repo_dir(repo => $self->repo->{name}), $option{file} );
 
   $self->remove_file_from_repo( file => $file );
 }

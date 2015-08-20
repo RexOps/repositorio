@@ -59,7 +59,7 @@ sub register {
           File::Spec->catfile( $session_dir, $self->stash->{session_token} );
 
         if ( !-d $session_dir ) {
-          mkpath $session_dir;
+          make_path $session_dir;
         }
 
         open( my $fh, ">", $session_file ) or die($!);

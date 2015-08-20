@@ -25,7 +25,7 @@ sub put_image {
     File::Spec->catdir( $repo_dir, "images", $self->param("name") );
   my $image_json = File::Spec->catfile( $image_dir, "image.json" );
 
-  mkpath $image_dir;
+  make_path $image_dir;
 
   open( my $fh, ">", $image_json ) or die($!);
   print $fh $self->req->body;

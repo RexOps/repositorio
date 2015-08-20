@@ -45,16 +45,7 @@ sub mirror {
   my $destbase;
 
   # this should probably be replaced by get_repo_dir
-  if ($self->app->config->{TagStyle} eq 'TopDir') {
-    $destbase = $self->repo->{local};
-  }
-  elsif ($self->app->config->{TagStyle} eq 'BottomDir') {
-    $destbase = File::Spec->catdir($self->repo->{local},'head');
-  }
-  else {
-    # add new tagstyles here
-    $self->app->logger->log_and_croak(level => 'error', 'message' => 'Unknown TagStyle: '.$self->app->config->{TagStyle});
-  }
+  my $destbase = $self->get_repo_dir('head');
 
   # try download Release and Release.gpg
   try {
@@ -428,8 +419,8 @@ sub init {
 
   my $repo_dir = $self->app->get_repo_dir( repo => $self->repo->{name} );
 
-  mkpath File::Spec->catdir($repo_dir,'dists',$dist,$component,"binary-$arch");
-  mkpath File::Spec->catdir($repo_dir,'pool',$dist,$component);
+  make_path File::Spec->catdir($repo_dir,'dists',$dist,$component,"binary-$arch");
+  make_path File::Spec->catdir($repo_dir,'pool',$dist,$component);
 
   my $aptftp      = io("$repo_dir/aptftp.conf");
   my $aptgenerate = io("$repo_dir/aptgenerate.conf");

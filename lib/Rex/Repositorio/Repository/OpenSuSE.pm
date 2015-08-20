@@ -96,7 +96,7 @@ sub mirror {
     my $local_file = File::Spec->catdir(
       $self->app->get_repo_dir( repo => $self->repo->{name} ),
       $path );
-    mkpath dirname($local_file);
+    make_path dirname($local_file);
 
     $self->download_package(
       url  => "$repo_url/$file",

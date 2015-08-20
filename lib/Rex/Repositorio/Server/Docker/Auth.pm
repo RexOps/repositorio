@@ -113,7 +113,7 @@ sub post_user {
   my $username = $ref->{username};
 
   if ( !-d File::Spec->catdir( $user_dir, $username ) ) {
-    mkpath( File::Spec->catdir( $user_dir, $username ) );
+    make_path( File::Spec->catdir( $user_dir, $username ) );
 
     open( my $fh, ">",
       File::Spec->catfile( $user_dir, $username, "user.json" ) )

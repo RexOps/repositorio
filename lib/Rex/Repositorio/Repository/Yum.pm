@@ -34,21 +34,8 @@ sub mirror {
   ( $packages_ref, $repomd_ref ) = $self->_get_repomd_xml( $self->repo->{url} );
   my @packages = @{$packages_ref};
 
-  my $url = $self->repo->{url} . "/repodata/repomd.xml";
-  my $destbase;
-
-  # this should probably be replaced by get_repo_dir
-  if ($self->app->config->{TagStyle} eq 'TopDir') {
-    $destbase = $self->repo->{local};
-  }
-  elsif ($self->app->config->{TagStyle} eq 'BottomDir') {
-    $destbase = File::Spec->catdir($self->repo->{local},'head');
-  }
-  else {
-    # add new tagstyles here
-    $self->app->logger->log_and_croak('Unknown TagStyle: '.$self->app->config->{TagStyle});
-  }
-
+  my $url          = $self->repo->{url} . "/repodata/repomd.xml";
+  my $destbase     = $self->app->get_repo_dir(repo => $self->repo->{name});
   my $repodatabase = File::Spec->catfile( $destbase, 'repodata' );
 
   try {
@@ -150,19 +137,7 @@ sub _download_packages {
   my $p_count = 0;
   my $p_total = scalar @packages;
 
-  my $destbase;
-
-  # this should probably be replaced by get_repo_dir
-  if ($self->app->config->{TagStyle} eq 'TopDir') {
-    $destbase = $self->repo->{local};
-  }
-  elsif ($self->app->config->{TagStyle} eq 'BottomDir') {
-    $destbase = File::Spec->catdir($self->repo->{local},'head');
-  }
-  else {
-    # add new tagstyles here
-    $self->app->logger->log_and_croak('Unknown TagStyle: '.$self->app->config->{TagStyle});
-  }
+  my $destbase = $self->app->get_repo_dir(repo => $self->repo->{name});
 
   for my $package (@packages) {
     my $package_url  = $self->repo->{url} . "/" . $package->{location};
@@ -236,8 +211,18 @@ sub _get_repomd_xml {
 sub init {
   my $self = shift;
 
-  my $repo_dir = $self->app->get_repo_dir( repo => $self->repo->{name} );
-  mkpath File::Spec->catdir($repo_dir, 'repodata');
+  my $repo_dir = $self->app->get_repo_dir(repo => $self->repo->{name});
+  my $repodata_path = File::Spec->catdir($repo_dir, 'repodata');
+  $self->app->logger->debug("init: repodata_path: ${repodata_path}");
+  unless (-d $repodata_path) {
+    $self->app->logger->debug("init: make_path: ${repodata_path}");
+    my $make_path_error;
+    #my $dirs = File::Path->make_path($repodata_path, { error => \$make_path_error },);
+    #my $dirs = File::Path->make_path($repodata_path);
+    unless (File::Path->make_path($repodata_path)) {
+      $self->app->logger->log_and_croak(level => 'error', message => "init: unable to create path: ${repodata_path}");
+    }
+  }
 
   $self->_run_createrepo();
 }
@@ -253,8 +238,7 @@ sub add_file {
     }
   );
 
-  my $dest = File::Spec->catfile($self->app->get_repo_dir(
-      repo => $self->repo->{name}), basename( $option{file} ));
+  my $dest = File::Spec->catfile($self->app->get_repo_dir(repo => $self->repo->{name}), basename( $option{file} ));
 
   $self->add_file_to_repo( source => $option{file}, dest => $dest );
 
@@ -273,8 +257,7 @@ sub remove_file {
     }
   );
 
-  my $file = File::Spec->catfile($self->app->get_repo_dir(
-      repo => $self->repo->{name}), basename( $option{file} ));
+  my $file = File::Spec->catfile($self->app->get_repo_dir(repo => $self->repo->{name}), basename( $option{file} ));
 
   $self->remove_file_from_repo( file => $file );
 
@@ -284,7 +267,7 @@ sub remove_file {
 sub _run_createrepo {
   my $self = shift;
 
-  my $repo_dir = $self->app->get_repo_dir( repo => $self->repo->{name} );
+  my $repo_dir = $self->app->get_repo_dir(repo => $self->repo->{name});
 
   if ( exists $self->repo->{gpg} && $self->repo->{gpg}->{key} ) {
     unlink File::Spec->catfile($repo_dir, qw/ repodata repomd.xml.asc /);

@@ -141,7 +141,7 @@ sub _proxy_url {
     sub {
       my ( $c, $tx ) = @_;
       $c->app->log->debug("Got data from upstream ($orig_url)...");
-      mkpath( dirname($serve_dir) );
+      make_path( dirname($serve_dir) );
       open my $fh, '>', $serve_dir or die($!);
       binmode $fh;
       print $fh $tx->res->body;

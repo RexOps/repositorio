@@ -59,7 +59,7 @@ sub download_gzip {
   my $tdiff = time() - $t1;
   $self->app->logger->debug("Uncompressing: $url took: ${tdiff} seconds");
   if ( !$un_content ) {
-    $self->app->logger->log_and_croak('error', message => 'Error uncompressing data.');
+    $self->app->logger->log_and_croak(level => 'error', message => 'Error uncompressing data.');
   }
 
   return $un_content;
@@ -144,19 +144,8 @@ sub download_package {
     }
   );
 
-  my $package_file;
-  if ($self->app->config->{TagStyle} eq 'TopDir') {
-    $package_file = File::Spec->catfile(
-      $self->app->config->{RepositoryRoot}, 'head', $option{dest});
-  }
-  elsif ($self->app->config->{TagStyle} eq 'BottomDir') {
-    # tag is inserted by caller
-    $package_file = File::Spec->catfile(
-      $self->app->config->{RepositoryRoot}, $option{dest});
-  }
-  else {
-    $self->app->logger->log_and_croak(level => 'error', message => 'Unknown TagStyle: '.$self->app->config->{TagStyle})
-  }
+  my $repo_dir = $self->get_repo_dir(repo => $self->repo->{name});
+  my $package_file = File::Spec->catfile($repo_dir, $option{dest});
 
   $self->_download_binary_file(
     dest        => $package_file,
@@ -189,19 +178,8 @@ sub download_metadata {
     }
   );
 
-  my $metadata_file;
-  if ($self->app->config->{TagStyle} eq 'TopDir') {
-    $metadata_file = File::Spec->catdir(
-      $self->app->config->{RepositoryRoot}, 'head', $option{dest});
-  }
-  elsif ($self->app->config->{TagStyle} eq 'BottomDir') {
-    # tag is inserted by caller
-    $metadata_file = File::Spec->catfile(
-      $self->app->config->{RepositoryRoot}, $option{dest});
-  }
-  else {
-    $self->app->logger->log_and_croak('Unknown TagStyle: '.$self->app->config->{TagStyle})
-  }
+  my $repo_dir = $self->get_repo_dir(repo => $self->repo->{name});
+  my $metadata_file = File::Spec->catfile($repo_dir, $option{dest});
 
   $self->_download_binary_file(
     dest  => $metadata_file,
@@ -239,7 +217,7 @@ sub _download_binary_file {
 
   $self->app->logger->debug("_download_binary_file: $option{url} -> $option{dest}");
 
-  mkpath( dirname( $option{dest} ) ) if ( !-d dirname $option{dest} );
+  File::Path->make_path( dirname( $option{dest} ) ) if ( !-d dirname $option{dest} );
 
   if ( exists $option{cb}
     && ref $option{cb} eq "CODE"
@@ -319,7 +297,12 @@ sub add_file_to_repo {
     @_,
     {
       source => {
-        type => SCALAR
+        type => SCALAR,
+        callbacks => {
+          valid_file => sub {
+            return -f $_[0] ? 1 : 0;
+          },
+        },
       },
       dest => {
         type => SCALAR
@@ -530,9 +513,10 @@ sub update_errata {
   my $errata_dir =
     $self->app->get_errata_dir( repo => $self->repo->{name}, tag => "head" );
 
-  mkpath $errata_dir;
+  File::Path->make_path($errata_dir);
 
-  system "cd $errata_dir ; tar xzf $file"; #TODO: replace with perl
+  #XXX ewww
+  system "cd ${errata_dir} ; tar xzf ${file}"; #TODO: replace with perl
 
   if ( $? != 0 ) {
     confess "Error extracting errata database.";
@@ -540,7 +524,7 @@ sub update_errata {
 
   unlink $file;
 
-  $self->app->logger->debug("Updating errata of type: $errata_type (done)");
+  $self->app->logger->debug("Updating errata of type: ${errata_type} (done)");
 }
 
 1;

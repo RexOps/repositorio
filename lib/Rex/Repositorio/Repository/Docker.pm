@@ -23,7 +23,7 @@ sub init {
   my $self = shift;
 
   my $repo_dir = $self->app->get_repo_dir( repo => $self->repo->{name} );
-  mkpath "$repo_dir";
+  make_path "$repo_dir";
 }
 
 1;
