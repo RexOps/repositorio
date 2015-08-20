@@ -144,7 +144,7 @@ sub download_package {
     }
   );
 
-  my $repo_dir = $self->get_repo_dir(repo => $self->repo->{name});
+  my $repo_dir = $self->app->get_repo_dir(repo => $self->repo->{name});
   my $package_file = File::Spec->catfile($repo_dir, $option{dest});
 
   $self->_download_binary_file(
@@ -178,7 +178,7 @@ sub download_metadata {
     }
   );
 
-  my $repo_dir = $self->get_repo_dir(repo => $self->repo->{name});
+  my $repo_dir = $self->app->get_repo_dir(repo => $self->repo->{name});
   my $metadata_file = File::Spec->catfile($repo_dir, $option{dest});
 
   $self->_download_binary_file(
