@@ -25,6 +25,10 @@ use Data::Dumper;
 
 # VERSION
 
+if ( !$Rex::Repositorio::VERSION ) {
+  $Rex::Repositorio::VERSION = "9999.99.99";
+}
+
 has config     => ( is => 'ro' );
 has logger     => ( is => 'ro' );
 
@@ -546,7 +550,7 @@ sub _print {
   my $self  = shift;
   my @lines = @_;
 
-  print "repositorio: ${VERSION}\n";
+  print "repositorio: ${Rex::Repositorio::VERSION}\n";
   print "-" x 80;
   print "\n";
   print "$_\n" for @lines;
