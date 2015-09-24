@@ -42,16 +42,13 @@ sub mirror {
 
   $self->app->logger->notice('Downloading metadata...');
 
-  my $destbase;
-
-  # this should probably be replaced by get_repo_dir
-  my $destbase = $self->get_repo_dir('head');
-
+  my $destbase     = $self->app->get_repo_dir(repo => $self->repo->{name});
+  
   # try download Release and Release.gpg
   try {
     $self->download_metadata(
       url   => $url . '/Release',
-      dest  => File::Spec->catfile($destbase,'dists',$dist,'Release'),
+      dest  => File::Spec->catfile('dists',$dist,'Release'),
       force => $option{update_metadata},
     );
 
@@ -59,7 +56,7 @@ sub mirror {
 
     $self->download_metadata(
       url   => $url . '/Release.gpg',
-      dest  => File::Spec->catfile($destbase,'dists', $dist, 'Release.gpg'),
+      dest  => File::Spec->catfile('dists', $dist, 'Release.gpg'),
       force => $option{update_metadata},
     );
 
@@ -92,7 +89,7 @@ sub mirror {
     try {
       $self->download_metadata(
         url   => $file_url,
-        dest  => File::Spec->catfile($destbase,'dists',$dist,$file),
+        dest  => File::Spec->catfile('dists',$dist,$file),
         force => $option{update_metadata},
       );
     }
@@ -143,7 +140,7 @@ sub mirror {
           $p_count++;
           $self->app->logger->info("${p_count}/$p_total ${package_url}");
 
-          my $local_file = File::Spec->catfile($destbase,$package->{Filename});
+          my $local_file = File::Spec->catfile($package->{Filename});
           $self->download_package(
             url  => $package_url,
             name => $package_name,
@@ -209,7 +206,7 @@ sub mirror {
             $p_count++;
             $self->app->logger->info("${p_count}/${p_total} ${package_url}");
 
-            my $local_file = File::Spec->catfile($destbase,$package->{Filename});
+            my $local_file = File::Spec->catfile($package->{Filename});
             $self->download_package(
               url  => $package_url,
               name => $package_name,
@@ -239,7 +236,7 @@ sub mirror {
             $remote_sha256sums =~ s/^\Q$repo_root\E//;
 
             my $local_sha256sums_rel = File::Spec->catfile(
-              $destbase, $remote_sha256sums);
+              $remote_sha256sums);
 
             $remote_sha256sums = $self->repo->{url} . $remote_sha256sums;
 
@@ -306,7 +303,7 @@ sub mirror {
       try {
         $self->download_metadata(
           url   => $file_url,
-          dest  => File::Spec->catfile($destbase,'dists',$dist,$file),
+          dest  => File::Spec->catfile('dists',$dist,$file),
           force => $option{update_metadata},
         );
       }

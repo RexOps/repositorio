@@ -36,7 +36,7 @@ sub mirror {
 
   my $url          = $self->repo->{url} . "/repodata/repomd.xml";
   my $destbase     = $self->app->get_repo_dir(repo => $self->repo->{name});
-  my $repodatabase = File::Spec->catfile( $destbase, 'repodata' );
+  my $repodatabase = File::Spec->catfile( 'repodata' );
 
   try {
     $self->download_metadata(
@@ -105,7 +105,7 @@ sub mirror {
 
     for my $file (@files) {
       my $file_url   = $self->repo->{url} . "/" . $file;
-      my $local_file = File::Spec->catfile($destbase, $file);
+      my $local_file = File::Spec->catfile($file);
 
       $file_count++;
       $self->app->logger->info("${file_count}/$file_total ${file_url}");
@@ -145,7 +145,7 @@ sub _download_packages {
 
     $p_count++;
     $self->app->logger->info("${p_count}/$p_total ${package_url}");
-    my $local_file = File::Spec->catfile($destbase,$package->{location});
+    my $local_file = File::Spec->catfile($package->{location});
 
     my ($type, $value);
     if ($option{'checksums'}) {
