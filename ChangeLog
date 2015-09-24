@@ -1,3 +1,22 @@
+2015-09-27 Jan Gehring <jfried, mailbox.org> (1.2.0)
+  * replaced Log::Log4perl with Log::Dispatch #32 - mrproper
+  * removed progressbar in favour of console and crontab compatible output #32 - mrproper
+  * added --log-level cli option to overwrite configured ScreenLevel #32 - mrproper
+  * changed checking of packages to use filesize as default. This speeds up syncing drastically #32 - mrproper
+  * added --checksums cli option to use checksum again #32 - mrproper
+  * refactored 'sub download' and '_download_binary_file'' to handle retrying more gracefully #32 - mrproper
+  * split off checksums for sha to its own sub to be consistent with the rest of the types #32 - mrproper
+  * added checksum for size, this is the default behaviour as mentioned above for packages #32 - mrproper
+  * minor formatting changes #32 - mrproper
+  * refactored sub get_repo_dir #32 - mrproper
+  * general code cleanup #31 - djzort 
+  * tuned Config::General usage to allow conf.d style directories #30 - djzort
+  * updated documentation #30 - djzort
+  * introduces a config option that places the tag directory at the bottom most directory rather than the top #30 - djzort
+  * add --clonetag option, which allows an existing tag to be cloned (copied). #29 - djzort
+  * add --force option to --tag, so that an existing tag is not over written unless you mean really it. #29 - djzort
+  * use File::Spec throughout &tag, also check that the $dir opens and logcroak() if not #29 - djzort
+  
 2015-05-09 Jan Gehring <jfried, mailbox.org> (1.1.0)
   * added proxy support for embededd webserver/proxy #19
 	* download LiveOS/squashfs.img if available #20
