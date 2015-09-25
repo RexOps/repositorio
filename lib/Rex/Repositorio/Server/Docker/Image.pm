@@ -9,7 +9,7 @@ package Rex::Repositorio::Server::Docker::Image;
 use Mojo::Base 'Mojolicious::Controller';
 use Data::Dumper;
 use File::Spec;
-use File::Path;
+use File::Path 'make_path', 'remove_tree';
 use File::Basename 'basename';
 require IO::All;
 use JSON::XS;

@@ -14,7 +14,7 @@ use warnings;
 use Mojo::Base 'Mojolicious::Plugin';
 use Data::Dumper;
 use File::Spec;
-use File::Path;
+use File::Path 'make_path', 'remove_tree';
 use JSON::XS;
 require IO::All;
 
