@@ -16,7 +16,7 @@ use XML::LibXML;
 use XML::Simple;
 use Params::Validate qw(:all);
 use IO::All;
-use File::Path;
+use File::Path 'make_path';
 use File::Basename qw'dirname';
 use File::Spec;
 use File::Copy;
@@ -217,7 +217,7 @@ sub _download_binary_file {
 
   $self->app->logger->debug("_download_binary_file: $option{url} -> $option{dest}");
 
-  File::Path->make_path( dirname( $option{dest} ) ) if ( !-d dirname $option{dest} );
+  make_path( dirname( $option{dest} ) ) if ( !-d dirname $option{dest} );
 
   if ( exists $option{cb}
     && ref $option{cb} eq "CODE"
@@ -513,7 +513,7 @@ sub update_errata {
   my $errata_dir =
     $self->app->get_errata_dir( repo => $self->repo->{name}, tag => "head" );
 
-  File::Path->make_path($errata_dir);
+  make_path($errata_dir);
 
   #XXX ewww
   system "cd ${errata_dir} ; tar xzf ${file}"; #TODO: replace with perl

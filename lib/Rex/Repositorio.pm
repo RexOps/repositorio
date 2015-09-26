@@ -15,7 +15,7 @@ use XML::LibXML;
 use XML::Simple;
 use Params::Validate qw(:all);
 use IO::All;
-use File::Path;
+use File::Path 'make_path';
 use File::Basename qw'dirname';
 use File::Spec;
 use File::Copy;
@@ -457,7 +457,7 @@ sub tag {
     }
   }
 
-  File::Path->make_path($tag_dir);
+  make_path($tag_dir);
 
   for my $dir (@dirs) {
     opendir my $dh, $dir

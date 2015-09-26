@@ -14,7 +14,6 @@ use Digest::SHA;
 use Carp;
 use Params::Validate qw(:all);
 use File::Spec;
-use File::Path;
 use IO::All;
 
 # VERSION

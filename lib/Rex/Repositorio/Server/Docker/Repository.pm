@@ -52,7 +52,7 @@ sub get_repo_images {
         my ( $c, $tx ) = @_;
         $c->app->log->debug("Got data from upstream...");
 
-        File::Path->make_path( dirname($repo_file) );
+        make_path( dirname($repo_file) );
         open my $fh, '>', $repo_file or die($!);
         binmode $fh;
         print $fh $tx->res->body;
@@ -63,7 +63,7 @@ sub get_repo_images {
         for my $image_data ( @{$ref} ) {
           my $image_dir =
             File::Spec->catdir( $repo_dir, "images", $image_data->{id} );
-          File::Path->make_path($image_dir);
+          make_path($image_dir);
           open my $image_ep, '>',
             File::Spec->catfile( $image_dir, 'endpoint.data' )
             or die($!);
@@ -111,7 +111,7 @@ sub put_repo {
   my $ref = decode_json( $self->req->body );
   my $store = [ map { { id => $_->{id} } } @{$ref} ];
 
-  File::Path->make_path($repo_dir);
+  make_path($repo_dir);
   open( my $fh, ">", File::Spec->catfile( $repo_dir, "repo.json" ) ) or die($!);
   print $fh encode_json($store);
   close($fh);
@@ -170,7 +170,7 @@ sub get_repo_tag {
       sub {
         my ( $c, $tx ) = @_;
         $c->app->log->debug("Got data from upstream...");
-        File::Path->make_path($tag_dir);
+        make_path($tag_dir);
         my $ref = $tx->res->json;
         for my $e ( @{$ref} ) {
           open my $fh, ">", File::Spec->catfile( $tag_dir, $e->{name} )
@@ -221,7 +221,7 @@ sub put_repo_tag {
     File::Spec->catdir( $self->app->get_repo_dir( repo => $self->repo->{name} ),
     "repository", $repo_name, "tags" );
 
-  File::Path->make_path($tag_dir);
+  make_path($tag_dir);
   open( my $fh, ">", File::Spec->catfile( $tag_dir, $tag_name ) ) or die($!);
   print $fh $tag_sha;
   close($fh);

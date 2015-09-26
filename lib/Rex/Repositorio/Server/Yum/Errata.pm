@@ -8,7 +8,6 @@ package Rex::Repositorio::Server::Yum::Errata;
 
 use Mojo::Base 'Mojolicious::Controller';
 use File::Spec;
-use File::Path;
 use JSON::XS;
 use List::MoreUtils 'firstidx';
 use Data::Dumper;
