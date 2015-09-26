@@ -279,7 +279,13 @@ sub _download_binary_file {
         $self->app->logger->error("_download_binary_file: $option{url} retrying");
       }
       else {
-        $self->app->logger->log_and_croak(level => 'error', message=> "_download_binary_file: $option{url} failed and exhausted all retries.");
+        if($self->app->config->{DownloadSkip404} && $resp->code == 404) {
+          $self->app->logger->error("_download_binary_file: $option{url} failed with status: " . $resp->status_line . ". Ignoring due to config option DownloadSkip404.");
+          return;
+        }
+        else {
+          $self->app->logger->log_and_croak(level => 'error', message=> "_download_binary_file: $option{url} failed and exhausted all retries.");
+        }
       }
     }
     else {
