@@ -24,6 +24,11 @@ extends "Rex::Repositorio::Repository::Base";
 sub mirror {
   my ( $self, %option ) = @_;
 
+  unless ($self->repo->{url}) {
+    $self->app->logger->notice('No URL, skipping mirror');
+    return
+  }
+
   $self->repo->{url} =~ s/\/$//;
   $self->repo->{local} =~ s/\/$//;
   my $name = $self->repo->{name};
