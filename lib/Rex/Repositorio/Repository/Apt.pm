@@ -419,8 +419,8 @@ sub init {
 
   my $repo_dir = $self->app->get_repo_dir( repo => $self->repo->{name} );
 
-  make_path File::Spec->catdir($repo_dir,'dists',$dist,$component,"binary-$arch");
-  make_path File::Spec->catdir($repo_dir,'pool',$dist,$component);
+  File::Path->make_path(File::Spec->catdir($repo_dir,'dists',$dist,$component,"binary-$arch"));
+  File::Path->make_path(File::Spec->catdir($repo_dir,'pool',$dist,$component));
 
   my $aptftp      = io("$repo_dir/aptftp.conf");
   my $aptgenerate = io("$repo_dir/aptgenerate.conf");
