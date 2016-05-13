@@ -42,7 +42,7 @@ sub mirror {
   $self->app->logger->notice('Downloading metadata...');
 
   my $destbase     = $self->app->get_repo_dir(repo => $self->repo->{name});
-  
+
   # try download Release and Release.gpg
   try {
     $self->download_metadata(
