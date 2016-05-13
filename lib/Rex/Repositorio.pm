@@ -740,3 +740,11 @@ An example log4perl.conf file:
  log4perl.appender.FileAppndr1          = Log::Log4perl::Appender::File
  log4perl.appender.FileAppndr1.filename = /var/log/repositorio.log
  log4perl.appender.FileAppndr1.layout   = Log::Log4perl::Layout::SimpleLayout
+
+
+=head1 LICENSE
+
+Repositorio is a free software, licensed under:
+The Apache License, Version 2.0, January 2004
+
+
