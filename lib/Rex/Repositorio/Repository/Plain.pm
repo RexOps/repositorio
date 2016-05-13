@@ -13,7 +13,7 @@ use Data::Dumper;
 use Carp;
 use Params::Validate qw(:all);
 use File::Spec;
-use File::Path;
+use File::Path 'make_path';
 use IO::All;
 use JSON::XS;
 use Mojo::DOM;
@@ -59,7 +59,7 @@ sub mirror {
     $path =~ s/$repo_url//g;
     my $local_file = File::Spec->catdir(
       $self->app->get_repo_dir(repo => $self->repo->{name}), $path );
-    File::Path->make_path(basename($local_file));
+    make_path(basename($local_file));
 
     $self->download_package(
       url  => $file,
@@ -77,7 +77,7 @@ sub init {
   my $self = shift;
 
   my $repo_dir = $self->app->get_repo_dir(repo => $self->repo->{name});
-  File::Path->make_path($repo_dir);
+  make_path($repo_dir);
 }
 
 sub add_file {

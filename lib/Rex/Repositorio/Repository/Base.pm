@@ -16,7 +16,7 @@ use XML::LibXML;
 use XML::Simple;
 use Params::Validate qw(:all);
 use IO::All;
-use File::Path;
+use File::Path 'make_path';
 use File::Basename qw'dirname';
 use File::Spec;
 use File::Copy;
@@ -217,7 +217,7 @@ sub _download_binary_file {
 
   $self->app->logger->debug("_download_binary_file: $option{url} -> $option{dest}");
 
-  File::Path->make_path( dirname( $option{dest} ) ) if ( !-d dirname $option{dest} );
+  make_path( dirname( $option{dest} ) ) if ( !-d dirname $option{dest} );
 
   if ( exists $option{cb}
     && ref $option{cb} eq "CODE"
@@ -279,7 +279,13 @@ sub _download_binary_file {
         $self->app->logger->error("_download_binary_file: $option{url} retrying");
       }
       else {
-        $self->app->logger->log_and_croak(level => 'error', message=> "_download_binary_file: $option{url} failed and exhausted all retries.");
+        if($self->app->config->{DownloadSkip404} && $resp->code == 404) {
+          $self->app->logger->error("_download_binary_file: $option{url} failed with status: " . $resp->status_line . ". Ignoring due to config option DownloadSkip404.");
+          return;
+        }
+        else {
+          $self->app->logger->log_and_croak(level => 'error', message=> "_download_binary_file: $option{url} failed and exhausted all retries.");
+        }
       }
     }
     else {
@@ -513,7 +519,7 @@ sub update_errata {
   my $errata_dir =
     $self->app->get_errata_dir( repo => $self->repo->{name}, tag => "head" );
 
-  File::Path->make_path($errata_dir);
+  make_path($errata_dir);
 
   #XXX ewww
   system "cd ${errata_dir} ; tar xzf ${file}"; #TODO: replace with perl

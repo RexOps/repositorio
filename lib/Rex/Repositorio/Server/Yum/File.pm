@@ -10,7 +10,7 @@ package Rex::Repositorio::Server::Yum::File;
 
 use Mojo::Base 'Mojolicious::Controller';
 use File::Spec;
-use File::Path;
+use File::Path 'make_path';
 use File::Basename qw'dirname';
 use Mojo::UserAgent;
 
@@ -147,11 +147,13 @@ sub _proxy_url {
       print $fh $tx->res->body;
       close $fh;
 
-      my $etag = $tx->res->headers->header('ETag');
-      $etag =~ s/"//g;
-      open my $fh_e, '>', "$serve_dir.etag" or die($!);
-      print $fh_e $etag;
-      close $fh_e;
+      my $etag = $tx->res->headers->header('ETag') || '';
+      if($etag) {
+        $etag =~ s/"//g;
+        open my $fh_e, '>', "$serve_dir.etag" or die($!);
+        print $fh_e $etag;
+        close $fh_e;
+      }
     }
   );
 }

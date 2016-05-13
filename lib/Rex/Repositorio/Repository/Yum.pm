@@ -13,7 +13,7 @@ use Data::Dumper;
 use Carp;
 use Params::Validate qw(:all);
 use File::Spec;
-use File::Path;
+use File::Path 'make_path';
 use IO::All;
 use JSON::XS;
 
@@ -23,6 +23,11 @@ extends "Rex::Repositorio::Repository::Base";
 
 sub mirror {
   my ( $self, %option ) = @_;
+
+  unless ($self->repo->{url}) {
+    $self->app->logger->notice('No URL, skipping mirror');
+    return
+  }
 
   $self->repo->{url} =~ s/\/$//;
   $self->repo->{local} =~ s/\/$//;
@@ -36,7 +41,7 @@ sub mirror {
 
   my $url          = $self->repo->{url} . "/repodata/repomd.xml";
   my $destbase     = $self->app->get_repo_dir(repo => $self->repo->{name});
-  my $repodatabase = File::Spec->catfile( $destbase, 'repodata' );
+  my $repodatabase = File::Spec->catfile( 'repodata' );
 
   try {
     $self->download_metadata(
@@ -105,7 +110,7 @@ sub mirror {
 
     for my $file (@files) {
       my $file_url   = $self->repo->{url} . "/" . $file;
-      my $local_file = File::Spec->catfile($destbase, $file);
+      my $local_file = File::Spec->catfile($file);
 
       $file_count++;
       $self->app->logger->info("${file_count}/$file_total ${file_url}");
@@ -145,7 +150,7 @@ sub _download_packages {
 
     $p_count++;
     $self->app->logger->info("${p_count}/$p_total ${package_url}");
-    my $local_file = File::Spec->catfile($destbase,$package->{location});
+    my $local_file = File::Spec->catfile($package->{location});
 
     my ($type, $value);
     if ($option{'checksums'}) {
@@ -219,7 +224,7 @@ sub init {
     my $make_path_error;
     #my $dirs = File::Path->make_path($repodata_path, { error => \$make_path_error },);
     #my $dirs = File::Path->make_path($repodata_path);
-    unless (File::Path->make_path($repodata_path)) {
+    unless (make_path($repodata_path)) {
       $self->app->logger->log_and_croak(level => 'error', message => "init: unable to create path: ${repodata_path}");
     }
   }

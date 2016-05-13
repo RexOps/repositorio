@@ -13,7 +13,7 @@ use Data::Dumper;
 use Carp;
 use Params::Validate qw(:all);
 use File::Spec;
-use File::Path;
+use File::Path 'make_path';
 
 # VERSION
 

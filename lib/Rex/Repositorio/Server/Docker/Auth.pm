@@ -9,7 +9,7 @@ package Rex::Repositorio::Server::Docker::Auth;
 use Mojo::Base 'Mojolicious::Controller';
 use MIME::Base64;
 use File::Spec;
-use File::Path;
+use File::Path 'make_path', 'remove_tree';
 use Digest::MD5 'md5_base64';
 use Rex::Repositorio::Server::Docker::Helper::Auth;
 use JSON::XS;
