@@ -388,6 +388,9 @@ sub _parse_debian_package_file {
     }
   }
 
+  # push last package
+  push @ret, $current_section;
+
   return \@ret;
 }
 
