@@ -1,3 +1,6 @@
+2016-08-23 Jan Gehring <jfried, mailbox.org> (1.2.1)
+  * added possibility to sign rpm packages
+
 2015-09-27 Jan Gehring <jfried, mailbox.org> (1.2.0)
   * replaced Log::Log4perl with Log::Dispatch #32 - mrproper
   * removed progressbar in favour of console and crontab compatible output #32 - mrproper
