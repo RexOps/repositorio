@@ -29,8 +29,10 @@ if ( !$Rex::Repositorio::VERSION ) {
   $Rex::Repositorio::VERSION = "9999.99.99";
 }
 
-has config     => ( is => 'ro' );
-has logger     => ( is => 'ro' );
+our @ON_EXIT;
+
+has config => ( is => 'ro' );
+has logger => ( is => 'ro' );
 
 sub ua {
   my ( $self, %option ) = @_;
@@ -55,15 +57,18 @@ sub ua {
 sub run {
   my ( $self, %option ) = @_;
 
-  # this config checking/munging stuff should probably be in the 'has config' definition?
+# this config checking/munging stuff should probably be in the 'has config' definition?
   $self->config->{RepositoryRoot} =~ s/\/$//;
-  $self->logger->log_and_croak(level => 'error', message => qq/"all" is a reserved word and cannot be used as a repo name\n/)
-    if grep { $_ eq 'all' } keys %{ $self->config->{Repository} };
+  $self->logger->log_and_croak(
+    level   => 'error',
+    message => qq/"all" is a reserved word and cannot be used as a repo name\n/
+  ) if grep { $_ eq 'all' } keys %{ $self->config->{Repository} };
   $self->config->{TagStyle} ||= 'TopDir';
   $self->logger->log_and_croak(
-    level => 'error', message => sprintf "Unknown TagStyle %s, must be TopDir or BottomDir\n", $self->config->{TagStyle}
-  )
-    unless $self->config->{TagStyle} =~ m/^(?:Top|Bottom)Dir$/;
+    level   => 'error',
+    message => sprintf "Unknown TagStyle %s, must be TopDir or BottomDir\n",
+    $self->config->{TagStyle}
+  ) unless $self->config->{TagStyle} =~ m/^(?:Top|Bottom)Dir$/;
 
   $self->parse_cli_option(%option);
 }
@@ -77,13 +82,18 @@ sub parse_cli_option {
   }
 
   if ( exists $option{repo} ) {
-    $self->logger->log_and_croak(level => 'error', message => sprintf("Unknown repo: %s\n", $option{repo}))
+    $self->logger->log_and_croak(
+      level   => 'error',
+      message => sprintf( "Unknown repo: %s\n", $option{repo} )
+      )
       unless $option{repo} eq 'all'
-        or $self->config->{Repository}->{ $option{repo} };
+      or $self->config->{Repository}->{ $option{repo} };
+
+    $self->lock( $option{repo} );
   }
 
   if ( exists $option{mirror} && exists $option{repo} ) {
-    $self->logger->info("Going to mirror $option{repo} This may take a while." );
+    $self->logger->info("Going to mirror $option{repo} This may take a while.");
 
     my $update_files = 1;
 
@@ -105,10 +115,10 @@ sub parse_cli_option {
 
   elsif ( exists $option{tag} && exists $option{repo} ) {
     $self->tag(
-      tag => $option{tag},
+      tag      => $option{tag},
       clonetag => $option{clonetag} || 'head',
-      repo => $option{repo},
-      force => $option{force} || 0,
+      repo     => $option{repo},
+      force    => $option{force} || 0,
     );
   }
 
@@ -147,13 +157,53 @@ sub parse_cli_option {
   }
 
   elsif ( exists $option{"remove-file"} && exists $option{repo} ) {
-    $self->remove_file( file => $option{"remove-file"}, repo => $option{repo} );
+    $self->remove_file(
+      file => $option{"remove-file"},
+      repo => $option{repo}
+    );
   }
 
   else {
     $self->_help();
     exit 0;
   }
+}
+
+sub lock {
+  my $self = shift;
+  my $repo = shift;
+
+  open( my $fh, ">", "/tmp/repositorio.$repo.lock" );
+  my $flock_ok = flock( $fh, 2 );
+  while ( !$flock_ok ) {
+    $self->logger->info("Waiting for repository lock $repo");
+    sleep 1;
+    $flock_ok = flock( $fh, 2 );
+  }
+
+  $self->on_exit(
+    sub {
+      close $fh;
+    }
+  );
+}
+
+sub on_exit {
+  my $self = shift;
+  my $code = shift;
+  push @ON_EXIT, $code;
+}
+
+sub exit_app {
+  my $self = shift;
+
+  $self->logger->debug("Running exit code.");
+
+  for my $e (@ON_EXIT) {
+    $e->();
+  }
+
+  $self->logger->debug("Exit code finished.");
 }
 
 sub server {
@@ -441,34 +491,47 @@ sub tag {
 
   # Why is this an array?
   my @dirs;
-  push @dirs, $self->get_repo_dir(repo => $option{repo}, tag => $option{clonetag});
-  my $tag_dir = $self->get_repo_dir(repo => $option{repo}, tag => $option{tag});
+  push @dirs,
+    $self->get_repo_dir( repo => $option{repo}, tag => $option{clonetag} );
+  my $tag_dir =
+    $self->get_repo_dir( repo => $option{repo}, tag => $option{tag} );
 
-  $self->logger->log_and_croak(level => 'error', message => "Unknown tag $option{clonetag} on repo $option{repo} ($dirs[0])\n")
-    unless ( -d $dirs[0] );
+  $self->logger->log_and_croak(
+    level => 'error',
+    message =>
+      "Unknown tag $option{clonetag} on repo $option{repo} ($dirs[0])\n"
+  ) unless ( -d $dirs[0] );
 
   if ( -e $tag_dir ) {
-    if( $option{force} ) {
+    if ( $option{force} ) {
       $self->logger->debug("Removing $tag_dir");
       rmtree $tag_dir; # should be remove_tree, but will use legacy to match mkdir
     }
     else {
-      $self->logger->log_and_croak(level => 'error', message => "Tag $option{tag} on repo $option{repo} already exists (${tag_dir}), use --force\n");
+      $self->logger->log_and_croak(
+        level => 'error',
+        message =>
+          "Tag $option{tag} on repo $option{repo} already exists (${tag_dir}), use --force\n"
+      );
     }
   }
 
   make_path($tag_dir);
 
   for my $dir (@dirs) {
-    opendir my $dh, $dir
-        or $self->logger->log_and_croak(level => 'error', message => "Failed to open $dir: $!\nNew tag is probably unusable\n");
+    opendir my $dh,
+      $dir
+      or $self->logger->log_and_croak(
+      level   => 'error',
+      message => "Failed to open $dir: $!\nNew tag is probably unusable\n"
+      );
     while ( my $entry = readdir $dh ) {
       next if ( $entry eq '.' || $entry eq '..' );
-      my $rel_entry = File::Spec->catfile($dir, $entry);
+      my $rel_entry = File::Spec->catfile( $dir, $entry );
       $rel_entry =~ s{^$dirs[0]/}{}; # TODO use File::Spec?
 
-      my $srcfile = File::Spec->catfile($dir,$entry);
-      my $dstfile = File::Spec->catfile($tag_dir,$rel_entry);
+      my $srcfile = File::Spec->catfile( $dir,     $entry );
+      my $dstfile = File::Spec->catfile( $tag_dir, $rel_entry );
       $self->logger->debug("Tag Src: $srcfile, Dst: $dstfile");
 
       if ( -d $srcfile ) {
@@ -478,8 +541,7 @@ sub tag {
         next;
       }
 
-      $self->logger->debug(
-        "Linking (hard): $srcfile -> $dstfile");
+      $self->logger->debug("Linking (hard): $srcfile -> $dstfile");
       link $srcfile, $dstfile;
     }
     closedir $dh;
@@ -500,25 +562,28 @@ sub get_errata_dir {
     }
   );
 
-  if ($self->config->{TagStyle} eq 'TopDir') {
+  if ( $self->config->{TagStyle} eq 'TopDir' ) {
     return File::Spec->catdir(
       File::Spec->rel2abs( $self->config->{RepositoryRoot} ),
       $option{tag}, $option{repo}, 'errata' );
   }
-  elsif ($self->config->{TagStyle} eq 'BottomDir') {
+  elsif ( $self->config->{TagStyle} eq 'BottomDir' ) {
     return File::Spec->catdir(
       File::Spec->rel2abs( $self->config->{RepositoryRoot} ),
       $option{repo}, $option{tag}, 'errata' );
   }
   else {
     # add other styles here
-    $self->logger->log_and_croak(level => 'error', message => 'Shouldnt have gotten here');
+    $self->logger->log_and_croak(
+      level   => 'error',
+      message => 'Shouldnt have gotten here'
+    );
   }
 
 }
 
 sub get_repo_dir {
-  my $self = shift;
+  my $self   = shift;
   my %option = validate(
     @_,
     {
@@ -526,7 +591,7 @@ sub get_repo_dir {
         type => SCALAR
       },
       tag => {
-        type => SCALAR,
+        type    => SCALAR,
         default => 'head',
       }
     }
@@ -534,14 +599,19 @@ sub get_repo_dir {
 
   my $repo_config = $self->config->{Repository}->{ $option{repo} };
 
-  if ($self->config->{TagStyle} eq 'TopDir') {
-    return File::Spec->catdir($self->config->{RepositoryRoot}, $option{tag}, $repo_config->{local});
+  if ( $self->config->{TagStyle} eq 'TopDir' ) {
+    return File::Spec->catdir( $self->config->{RepositoryRoot},
+      $option{tag}, $repo_config->{local} );
   }
-  elsif ($self->config->{TagStyle} eq 'BottomDir') {
-    return File::Spec->catdir($self->config->{RepositoryRoot}, $repo_config->{local}, $option{tag});
+  elsif ( $self->config->{TagStyle} eq 'BottomDir' ) {
+    return File::Spec->catdir( $self->config->{RepositoryRoot},
+      $repo_config->{local}, $option{tag} );
   }
   else {
-    $self->logger->log_and_croak(level => 'error', message => 'get_repo_dir: Unknown TagStyle: '.$self->config->{TagStyle});
+    $self->logger->log_and_croak(
+      level   => 'error',
+      message => 'get_repo_dir: Unknown TagStyle: ' . $self->config->{TagStyle}
+    );
   }
 
 }

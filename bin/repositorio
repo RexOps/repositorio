@@ -15,6 +15,7 @@ use Config::General;
 use Log::Dispatch;
 use Data::Dumper;
 use Getopt::Long;
+use Rex::Repositorio::Log::Screen;
 
 use lib '/usr/lib/rex/perl/share/perl5/vendor_perl';
 
@@ -58,7 +59,7 @@ my $log_file_level = $conf{LogFileLevel}    || 'info';
 my $screen_level   = $conf{ScreenLevel} || 'info';
 $screen_level      = $cli{'loglevel'} if $cli{'loglevel'};
 
-my $log_outputs = [[ 'Screen', 'min_level' => $screen_level, stderr => 0, newline => 1, ]];
+my $log_outputs = [[ '+Rex::Repositorio::Log::Screen', 'min_level' => $screen_level, stderr => 0, newline => 1, ]];
 push @{$log_outputs}, [ 'File', 'min_level' => $log_file_level, filename => $log_file, newline => 1, mode => '>>'] if $log_file;
 my $logger = Log::Dispatch->new(outputs => $log_outputs);
 
@@ -68,7 +69,13 @@ $logger->debug("Configuration Dump:");
 $logger->debug( Dumper( \%conf ) );
 
 my $app = Rex::Repositorio->new( config => \%conf, logger => $logger );
+$SIG{INT} =  sub { $app->exit_app(); exit(0); };
+
 $app->run(%cli);
+
+END {
+  $app->exit_app if $app;
+}
 
 __END__
 
