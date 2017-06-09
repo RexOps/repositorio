@@ -15,7 +15,7 @@ use XML::LibXML;
 use XML::Simple;
 use Params::Validate qw(:all);
 use IO::All;
-use File::Path 'make_path';
+use File::Path 'make_path', 'remove_tree';
 use File::Basename qw'dirname';
 use File::Spec;
 use File::Copy;
@@ -450,7 +450,7 @@ sub tag {
   if ( -e $tag_dir ) {
     if( $option{force} ) {
       $self->logger->debug("Removing $tag_dir");
-      rmtree $tag_dir; # should be remove_tree, but will use legacy to match mkdir
+      remove_tree ( $tag_dir );
     }
     else {
       $self->logger->log_and_croak(level => 'error', message => "Tag $option{tag} on repo $option{repo} already exists (${tag_dir}), use --force\n");
