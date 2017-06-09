@@ -16,6 +16,7 @@ use File::Spec;
 use File::Path 'make_path';
 use IO::All;
 use JSON::XS;
+use Expect;
 
 # VERSION
 
@@ -245,6 +246,19 @@ sub add_file {
 
   my $dest = File::Spec->catfile($self->app->get_repo_dir(repo => $self->repo->{name}), basename( $option{file} ));
 
+  if ( exists $self->repo->{gpg} && $self->repo->{gpg}->{key} ) {
+    my $key_id = $self->repo->{gpg}->{key};
+    my $exp = Expect->spawn("/bin/rpmsign", "--addsign", "--key-id=$key_id", $option{file});
+    $exp->expect(60, [
+                    qr/Enter pass phrase:/ => sub {
+                      my $exp = shift;
+                      $exp->send($self->repo->{gpg}->{password} . "\n");
+                      exp_continue;
+                    },
+            ]);
+    $exp->soft_close();
+  }
+
   $self->add_file_to_repo( source => $option{file}, dest => $dest );
 
   $self->_run_createrepo();
@@ -301,8 +315,8 @@ sub _run_createrepo {
       confess "Error running: $cmd";
     }
 
-    # export pub key as asc file
     my $pub_file = $self->repo->{name} . ".asc";
+    unlink File::Spec->catfile($repo_dir, $pub_file);
     $cmd = "cd $repo_dir ; gpg -a --output $pub_file --export $key";
     system $cmd;
 
