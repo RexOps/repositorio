@@ -565,7 +565,7 @@ sub _run_ftp_archive {
 
     # export pub key as asc file
     my $pub_file = $self->repo->{name} . ".asc";
-    $cmd = "cd $repo_dir ; gpg -a --output $pub_file --export $key";
+    $cmd = "cd $repo_dir ; gpg -a --export $key > $pub_file";
     system $cmd;
 
     if ( $? != 0 ) {
