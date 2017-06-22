@@ -13,6 +13,7 @@ use Data::Dumper;
 use Digest::SHA;
 use Carp;
 use Params::Validate qw(:all);
+use File::Path qw(make_path);
 use File::Spec;
 use IO::All;
 
@@ -417,9 +418,19 @@ sub init {
   my $desc      = $self->repo->{description} || "$component repository";
 
   my $repo_dir = $self->app->get_repo_dir( repo => $self->repo->{name} );
+  my @repodata_paths = (File::Spec->catdir($repo_dir,'dists',$dist,$component,"binary-$arch"),  File::Spec->catdir($repo_dir,'pool',$dist,$component));
 
-  File::Path->make_path(File::Spec->catdir($repo_dir,'dists',$dist,$component,"binary-$arch"));
-  File::Path->make_path(File::Spec->catdir($repo_dir,'pool',$dist,$component));
+  for my $repodata_path (@repodata_paths) {
+    $self->app->logger->debug("init: repodata_path: ${repodata_path}");
+    unless (-d $repodata_path) {
+      $self->app->logger->debug("init: make_path: ${repodata_path}");
+      my $make_path_error;
+      unless (make_path($repodata_path)) {
+        $self->app->logger->log_and_croak(level => 'error', message => "init: unable to create path: ${repodata_path}");
+      }
+    }
+  }
+
 
   my $aptftp      = io("$repo_dir/aptftp.conf");
   my $aptgenerate = io("$repo_dir/aptgenerate.conf");
@@ -554,7 +565,7 @@ sub _run_ftp_archive {
 
     # export pub key as asc file
     my $pub_file = $self->repo->{name} . ".asc";
-    $cmd = "cd $repo_dir ; gpg -a --output $pub_file --export $key";
+    $cmd = "cd $repo_dir ; gpg -a --export $key > $pub_file";
     system $cmd;
 
     if ( $? != 0 ) {
