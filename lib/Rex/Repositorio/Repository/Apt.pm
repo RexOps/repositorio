@@ -70,9 +70,9 @@ sub mirror {
 
   $self->app->logger->notice('Downloading file listing...');
   my $f_count = 0;
-  my $f_total = scalar( @{ $ref->{SHA1} || $ref->{SHA1Sum} } );
+  my $f_total = scalar( @{ $ref->{SHA1} || $ref->{SHA1Sum} || $ref->{SHA256} } );
 
-  for my $file_data ( @{ $ref->{SHA1} || $ref->{SHA1Sum} } ) {
+  for my $file_data ( @{ $ref->{SHA1} || $ref->{SHA1Sum} || $ref->{SHA256} } ) {
 
     my $file_url = $url . "/" . $file_data->{file};
     my $file     = $file_data->{file};
@@ -140,13 +140,14 @@ sub mirror {
           $self->app->logger->info("${p_count}/$p_total ${package_url}");
 
           my $local_file = File::Spec->catfile($package->{Filename});
+          my $sha1 = ( $package->{SHA1} || $package->{SHA1Sum} );
+          my $shasum = ( $package->{SHA1} || $package->{SHA1Sum} || $package->{SHA256} || $package->{SHA256Sum} );
           $self->download_package(
             url  => $package_url,
             name => $package_name,
             dest => $local_file,
             cb   => sub {
-              $self->_checksum( @_, "sha1",
-                ( $package->{SHA1} || $package->{SHA1Sum} ) );
+              $self->_checksum( @_, ($sha1 ? "sha1" : "sha256"), $shasum);
             },
             force       => $option{force},
             update_file => $option{update_files},
@@ -206,13 +207,15 @@ sub mirror {
             $self->app->logger->info("${p_count}/${p_total} ${package_url}");
 
             my $local_file = File::Spec->catfile($package->{Filename});
+            my $sha1 = ( $package->{SHA1} || $package->{SHA1Sum} );
+            my $shasum = ( $package->{SHA1} || $package->{SHA1Sum} || $package->{SHA256} || $package->{SHA256Sum} );
+
             $self->download_package(
               url  => $package_url,
               name => $package_name,
               dest => $local_file,
               cb   => sub {
-                $self->_checksum( @_, "sha1",
-                  ( $package->{SHA1} || $package->{SHA1Sum} ) );
+                $self->_checksum( @_, ($sha1 ? "sha1" : "sha256"), $shasum );
               },
               force => $option{update_files}
             );
